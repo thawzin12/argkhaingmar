@@ -7,7 +7,7 @@ const router = express.Router();
 
 // Login GET
 router.get("/login", (req, res) => {
-  res.render("auth/login", { data: {}, errors: {} });
+  res.render("login", { data: {}, errors: {} });
 });
 
 // Login POST
@@ -36,7 +36,7 @@ router.post("/login", async (req, res) => {
 
   if (!user) {
     errors.email = "email is incorrect!";
-    return res.render("auth/login", {
+    return res.render("login", {
       data: req.body,
       errors,
     });
@@ -45,7 +45,7 @@ router.post("/login", async (req, res) => {
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
     errors.password = "password is incorrect";
-    return res.render("auth/login", {
+    return res.render("login", {
       data: req.body,
       errors,
     });
@@ -61,7 +61,7 @@ router.post("/login", async (req, res) => {
 });
 
 router.get("/admin/createuser", (req, res) => {
-  res.render("admin/create-user", {
+  res.render("create-user", {
     data: {},
     errors: {},
   });

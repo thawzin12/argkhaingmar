@@ -7,7 +7,7 @@ const router = express.Router();
 router.get("/dashboard", isAuthenticated, (req, res) => {
   const role = req.session.user.role;
 
-  res.render("dashboard/index", {
+  res.render("index", {
     user: req.session.user,
     role: role,
   });

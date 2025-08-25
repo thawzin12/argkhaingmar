@@ -1,0 +1,486 @@
+<%- include('datahead.ejs') %>
+<style>
+  /* Copy Button */
+  .dt-button.buttons-copy {
+    background-color: #17a2b8 !important; /* Teal/Info */
+    color: white !important;
+    border-radius: 5px;
+  }
+
+  /* Excel Button */
+  .dt-button.buttons-excel {
+    background-color: #28a745 !important; /* Green */
+    color: white !important;
+    border-radius: 5px;
+  }
+
+  /* PDF Button */
+  .dt-button.buttons-pdf {
+    background-color: #dc3545 !important; /* Red */
+    color: white !important;
+    border-radius: 5px;
+  }
+
+  /* Print Button */
+  .dt-button.buttons-print {
+    background-color: #007bff !important; /* Blue */
+    color: white !important;
+    border-radius: 5px;
+  }
+
+  /* Column Visibility Button */
+  .dt-button.buttons-colvis {
+    background-color: #6c757d !important; /* Gray */
+    color: white !important;
+    border-radius: 5px;
+  }
+</style>
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6"><h1>Purchase List</h1></div>
+      <div class="col-sm-6 text-right">
+        <a href="/createpurchase" class="btn btn-success">Add New Purchase</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <!-- Filters -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label>Filter by Date</label>
+        <input type="date" id="filter-date" class="form-control" />
+      </div>
+      <div class="col-md-4">
+        <label>Filter by Month</label>
+        <input type="month" id="filter-month" class="form-control" />
+      </div>
+    </div>
+
+    <!-- Total Summary Section -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <div class="alert alert-info">
+          <strong>Total Amount:</strong> <span id="summary-total">0</span>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="alert alert-success">
+          <strong>Total Paid:</strong> <span id="summary-paid">0</span>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="alert alert-warning">
+          <strong>Total Remaining:</strong>
+          <span id="summary-remaining">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-Supplier Summary Section -->
+    <div class="row mb-3" id="supplier-summary-container">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-secondary text-white">
+            <h5 class="card-title mb-0">Summary by Supplier</h5>
+          </div>
+          <div class="card-body">
+            <table
+              class="table table-bordered table-sm"
+              id="supplierSummaryTable"
+            >
+              <thead>
+                <tr>
+                  <th>Supplier</th>
+                  <th>Total Amount</th>
+                  <th>Total Paid</th>
+                  <th>Total Remaining</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Purchases Table -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">All Purchases</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table
+                class="table table-bordered table-striped table-hover w-100"
+                id="purchaseTable"
+              >
+                <thead class="thead-dark">
+                  <tr>
+                    <th>Invoice #</th>
+                    <th>Supplier</th>
+                    <th style="width: 70px">Date</th>
+                    <th>Total Amount</th>
+                    <th>Paid</th>
+                    <th>Remaining</th>
+                    <th>Status</th>
+                    <th style="width: 67px">Items</th>
+                    <th style="width: 100px">Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Items Modal -->
+<div class="modal fade" id="itemsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Purchase Items</h5>
+        <button type="button" class="close" data-dismiss="modal">
+          &times;
+        </button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Size</th>
+              <th>Unit</th>
+              <th>Quantity</th>
+              <th>Cost Price</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody id="itemsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">Add Payment</h5>
+        <button type="button" class="close text-white" data-dismiss="modal">
+          &times;
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="pay-purchase-id" />
+        <div class="form-group">
+          <label>Total Amount</label>
+          <input type="text" id="pay-total" class="form-control" readonly />
+        </div>
+        <div class="form-group">
+          <label>Already Paid</label>
+          <input type="text" id="pay-already" class="form-control" readonly />
+        </div>
+        <div class="form-group">
+          <label>Remaining</label>
+          <input type="text" id="pay-remaining" class="form-control" readonly />
+        </div>
+        <div class="form-group">
+          <label>Pay Now</label>
+          <input
+            type="number"
+            step="0.01"
+            id="pay-amount"
+            class="form-control"
+          />
+        </div>
+        <div class="alert alert-danger d-none" id="pay-error"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-success" id="save-payment">Pay</button>
+        <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const summaryTotal = document.getElementById("summary-total");
+    const summaryPaid = document.getElementById("summary-paid");
+    const summaryRemaining = document.getElementById("summary-remaining");
+    const supplierTbody = document.querySelector("#supplierSummaryTable tbody");
+
+    const updateSupplierSummary = (purchases) => {
+      const supplierTotals = {};
+      purchases.forEach((p) => {
+        const s = p.supplier_name || "-";
+        if (!supplierTotals[s])
+          supplierTotals[s] = { total: 0, paid: 0, remaining: 0 };
+        supplierTotals[s].total += parseFloat(p.total_amount) || 0;
+        supplierTotals[s].paid += parseFloat(p.total_paid) || 0;
+        supplierTotals[s].remaining += parseFloat(p.remaining) || 0;
+      });
+
+      supplierTbody.innerHTML = Object.entries(supplierTotals)
+        .map(
+          ([name, vals]) => `
+        <tr>
+          <td>${name}</td>
+          <td>${vals.total.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          })}</td>
+          <td>${vals.paid.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          })}</td>
+          <td>${vals.remaining.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          })}</td>
+        </tr>
+      `
+        )
+        .join("");
+    };
+
+    let purchaseTable = $("#purchaseTable").DataTable({
+      ajax: {
+        url: "/purchases/ajax",
+        data: function (d) {
+          d.date = $("#filter-date").val();
+          d.month = $("#filter-month").val();
+        },
+        dataSrc: function (json) {
+          // Update total summary
+          let total = 0,
+            paid = 0,
+            remaining = 0;
+          json.forEach((row) => {
+            total += parseFloat(row.total_amount) || 0;
+            paid += parseFloat(row.total_paid) || 0;
+            remaining += parseFloat(row.remaining) || 0;
+          });
+          summaryTotal.textContent = total.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          });
+          summaryPaid.textContent = paid.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          });
+          summaryRemaining.textContent = remaining.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          });
+
+          // Update per-supplier summary
+          updateSupplierSummary(json);
+
+          return json;
+        },
+      },
+      columns: [
+        { data: "invoice_number" },
+        { data: "supplier_name" },
+        { data: "purchase_date" },
+        {
+          data: "total_amount",
+          render: (d) =>
+            parseFloat(d).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+        },
+        {
+          data: "total_paid",
+          render: (d) =>
+            parseFloat(d).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+        },
+        {
+          data: "remaining",
+          render: (d) =>
+            parseFloat(d).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+        },
+        { data: "status" },
+        {
+          data: null,
+          render: (row) =>
+            `<button class="btn btn-sm btn-info view-items" data-id="${row.purchase_id}">View Items</button>`,
+        },
+        {
+          data: null,
+          render: (row) => {
+            let payBtn =
+              row.status === "Unpaid"
+                ? `<button class="btn btn-sm btn-success mark-paid" data-id="${row.purchase_id}" data-total="${row.total_amount}" data-paid="${row.total_paid}" data-remaining="${row.remaining}">Pay</button>`
+                : "";
+            return `${payBtn} <button class="btn btn-sm btn-danger delete-purchase" data-id="${row.purchase_id}">Delete</button>`;
+          },
+        },
+      ],
+
+      dom: "Bflrtip",
+      buttons: [
+        {
+          extend: "copy",
+          text: '<i class="fas fa-copy"></i> Copy',
+          className: "bg-primary",
+
+          title: "Purchase Report",
+        },
+        {
+          extend: "excel",
+          text: '<i class="fas fa-file-excel"></i>Excel',
+          className: "bg-success",
+
+          title: "Purchase Report",
+        },
+        {
+          extend: "pdf",
+          className: "bg-danger",
+          text: '<i class="fas fa-file-pdf"></i> PDF Report',
+          title: "Purchase Report - KhaingMar", // PDF Title
+        },
+        {
+          extend: "print",
+          className: "bg-info",
+          text: '<i class="fas fa-print"></i> Print',
+          title: "Purchase Report - KhaingMar", // Print Header Title
+          customize: function (win) {
+            // Optional: style print preview
+            $(win.document.body)
+              .css("font-size", "12pt")
+              .prepend(
+                '<h3 style="text-align:center; color:#007bff;">Shop Purchase Report</h3>'
+              );
+          },
+        },
+        {
+          extend: "colvis",
+          className: "bg-indigo",
+          text: '<i class="fas fa-columns"></i> Columns',
+          title: "Purchase Report",
+        },
+      ],
+      language: {
+        emptyTable:
+          "<div style='color:black; font-weight:bold;'><h1>📭 </h1>Try changing the date/month filter to see purchases.</div>",
+      },
+      pageLength: 10,
+      deferLoading: 0,
+    });
+
+    $("#filter-date, #filter-month").on("change", () =>
+      purchaseTable.ajax.reload()
+    );
+
+    // View Items Modal
+    $("#purchaseTable").on("click", ".view-items", function () {
+      const id = $(this).data("id");
+      fetch(`/purchases/items/${id}`)
+        .then((r) => r.json())
+        .then((items) => {
+          const tbody = document.getElementById("itemsTableBody");
+          tbody.innerHTML = items
+            .map(
+              (i) => `
+        <tr>
+          <td>${i.product_name}</td>
+          <td>${i.size_label}</td>
+          <td>${i.unit_label}</td>
+          <td>${i.quantity}</td>
+          <td>${i.cost_price}</td>
+          <td>${i.subtotal}</td>
+        </tr>`
+            )
+            .join("");
+          $("#itemsModal").modal("show");
+        });
+    });
+
+    // Payment & Delete functionality remains same
+    $("#purchaseTable").on("click", ".mark-paid", function () {
+      const id = $(this).data("id");
+      const total = parseFloat($(this).data("total")) || 0;
+      const already = parseFloat($(this).data("paid")) || 0;
+      const remaining = parseFloat($(this).data("remaining")) || 0;
+      $("#pay-purchase-id").val(id);
+      $("#pay-total").val(
+        total.toLocaleString("en-US", { minimumFractionDigits: 2 })
+      );
+      $("#pay-already").val(
+        already.toLocaleString("en-US", { minimumFractionDigits: 2 })
+      );
+      $("#pay-remaining").val(
+        remaining.toLocaleString("en-US", { minimumFractionDigits: 2 })
+      );
+      $("#pay-amount").val("");
+      $("#pay-error").addClass("d-none");
+      $("#paymentModal").modal("show");
+    });
+
+    $("#pay-amount").on("input", function () {
+      const remaining =
+        parseFloat($("#pay-remaining").val().replace(/,/g, "")) || 0;
+      const payNow = parseFloat($(this).val()) || 0;
+      $("#pay-error").toggleClass("d-none", payNow <= remaining);
+      if (payNow > remaining)
+        $("#pay-error").text("Payment cannot exceed Remaining amount!");
+    });
+
+    $("#save-payment").on("click", () => {
+      const id = $("#pay-purchase-id").val();
+      const payNow = parseFloat($("#pay-amount").val()) || 0;
+      const remaining =
+        parseFloat($("#pay-remaining").val().replace(/,/g, "")) || 0;
+      if (!payNow || payNow <= 0)
+        return Swal.fire("Error", "Enter a valid amount", "error");
+      if (payNow > remaining)
+        return Swal.fire(
+          "Error",
+          "Payment cannot exceed Remaining amount",
+          "error"
+        );
+
+      fetch(`/purchases/pay/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: payNow }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            purchaseTable.ajax.reload(null, false);
+            $("#paymentModal").modal("hide");
+            Swal.fire("Success", "Payment recorded", "success");
+          } else Swal.fire("Error", data.message || "Failed to pay", "error");
+        });
+    });
+
+    $("#purchaseTable").on("click", ".delete-purchase", function () {
+      const id = $(this).data("id");
+      Swal.fire({
+        title: "Delete purchase?",
+        text: "This will remove all items and adjust stock!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, delete!",
+        confirmButtonColor: "#d33",
+      }).then((res) => {
+        if (!res.isConfirmed) return;
+        fetch(`/purchases/delete/${id}`, { method: "DELETE" })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success) purchaseTable.ajax.reload();
+            else Swal.fire("Error", "Cannot delete purchase", "error");
+          });
+      });
+    });
+  });
+</script>
+
+<%- include('datafoot.ejs') %>

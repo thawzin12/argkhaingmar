@@ -1,0 +1,348 @@
+<%- include('head.ejs') %>
+
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>Purchase Form</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="breadcrumb-item active">Purchase Form</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-12">
+        <% if (error_msg && error_msg.length > 0) { %>
+          <div class="alert alert-danger alert-dismissible fade show" role="alert" id="flash-msg">
+            <%= error_msg %>
+            <button type="button" class="close text-white" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        <% } %>
+        <% if (success_msg && success_msg.length > 0) { %>
+          <div class="alert alert-success alert-dismissible fade show" role="alert" id="flash-msg">
+            <%= success_msg %>
+            <button type="button" class="close text-white" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        <% } %>
+
+        <div class="card card-primary">
+          <div class="card-header">
+            <h3 class="card-title">Create Purchase</h3>
+          </div>
+
+          <form id="purchase-form" action="/createpurchase" method="post">
+            <div class="card-body">
+              <!-- Supplier -->
+              <div class="form-group">
+                <label for="supplier_id">Supplier</label>
+                <select id="supplier_id" name="supplier_id" class="form-control">
+                  <option value="">-- Select Supplier --</option>
+                  <% suppliers.forEach(s => { %>
+                    <option value="<%= s.supplier_id %>" <%= (formData?.supplier_id == s.supplier_id ? 'selected' : '') %>>
+                      <%= s.name %>
+                    </option>
+                  <% }) %>
+                </select>
+                <% if (errors && errors.supplier_id) { %>
+                  <div class="text-danger"><%= errors.supplier_id %></div>
+                <% } %>
+              </div>
+
+              <!-- Invoice -->
+              <div class="form-group">
+                <label for="invoice_number">Invoice Number</label>
+                <input type="text" id="invoice_number" name="invoice_number" class="form-control"
+                  value="<%= formData?.invoice_number || '' %>">
+                <% if (errors && errors.invoice_number) { %>
+                  <div class="text-danger"><%= errors.invoice_number %></div>
+                <% } %>
+              </div>
+
+              <!-- Date -->
+              <div class="form-group">
+                <label for="purchase_date">Purchase Date</label>
+                <input type="date" id="purchase_date" name="purchase_date" class="form-control"
+                  value="<%= formData?.purchase_date || '' %>">
+                <% if (errors && errors.purchase_date) { %>
+                  <div class="text-danger"><%= errors.purchase_date %></div>
+                <% } %>
+              </div>
+
+              <!-- Items -->
+              <div class="form-group">
+                <label>Purchase Items</label>
+
+                <div id="items-container">
+                  <% 
+                  const rows = (formData && formData.size_id && formData.size_id.length)
+                    ? formData.size_id.length : 1;
+                  for (let i = 0; i < rows; i++) { 
+                  %>
+                    <div class="item-row row mb-2">
+                      <div class="col-md-4">
+                        <div class="form-group mb-0">
+                          <select name="size_id[]" class="form-control product-size">
+                            <option value="">-- Product / Size / Unit --</option>
+                            <% productSizes.forEach(ps => { %>
+                              <option value="<%= ps.size_id %>" 
+                                <%= (formData?.size_id && formData.size_id[i] == ps.size_id ? 'selected' : '') %>
+                                data-default-cost="<%= ps.cost_price || '' %>">
+                                <%= ps.Product.name %> - <%= ps.Size.size_label %> - <%= ps.Unit.unit_label %>
+                              </option>
+                            <% }) %>
+                          </select>
+                          <% if (itemErrors && itemErrors[i] && itemErrors[i].size_id) { %>
+                            <small class="text-danger"><%= itemErrors[i].size_id %></small>
+                          <% } %>
+                        </div>
+                      </div>
+
+                      <div class="col-md-2">
+                        <div class="form-group mb-0">
+                          <input type="number" name="quantity[]" class="form-control qty" min="1" placeholder="Qty"
+                            value="<%= formData?.quantity ? formData.quantity[i] : 1 %>">
+                        </div>
+                      </div>
+
+                      <div class="col-md-3">
+                        <div class="form-group mb-0">
+                          <input type="number" step="0.01" name="cost_price[]" class="form-control cost" placeholder="Cost"
+                            value="<%= formData?.cost_price ? formData.cost_price[i] : '' %>">
+                        </div>
+                      </div>
+
+                      <div class="col-md-2 d-flex align-items-center">
+                        <strong class="subtotal">0.00</strong>
+                      </div>
+
+                      <div class="col-md-1 d-flex align-items-center">
+                        <button type="button" class="btn btn-danger btn-sm remove-item">X</button>
+                      </div>
+                    </div>
+                  <% } %>
+                </div>
+
+                <button type="button" id="add-item" class="btn btn-sm btn-secondary mt-2">Add Item</button>
+              </div>
+
+              <div class="form-group text-right">
+                <h5>Total: <span id="grandTotal">0.00</span></h5>
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <button type="submit" class="btn btn-primary">Create Purchase</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('foot.ejs') %>
+
+<!-- Select2 CSS/JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+  const form = document.getElementById('purchase-form');
+  const itemsContainer = document.getElementById("items-container");
+  const addBtn = document.getElementById("add-item");
+
+  // Flash messages auto-hide
+  setTimeout(() => {
+    const msg = document.getElementById("flash-msg");
+    if (msg) {
+      msg.style.transition = "opacity 0.5s ease";
+      msg.style.opacity = "0";
+      setTimeout(() => msg.remove(), 2000);
+    }
+  }, 3000);
+
+  // Create row
+  function makeRow() {
+    const row = document.createElement("div");
+    row.className = "item-row row mb-2";
+    row.innerHTML = `
+      <div class="col-md-4">
+        <div class="form-group mb-0">
+          <select name="size_id[]" class="form-control product-size">
+            <option value="">-- Product / Size / Unit --</option>
+            <% productSizes.forEach(ps => { %>
+              <option value="<%= ps.size_id %>" data-default-cost="<%= ps.cost_price || '' %>">
+                <%= ps.Product.name %> - <%= ps.Size.size_label %> - <%= ps.Unit.unit_label %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="form-group mb-0">
+          <input type="number" name="quantity[]" class="form-control qty" min="1" value="1" placeholder="Qty">
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="form-group mb-0">
+          <input type="number" step="0.01" name="cost_price[]" class="form-control cost" placeholder="Cost">
+        </div>
+      </div>
+      <div class="col-md-2 d-flex align-items-center">
+        <strong class="subtotal">0.00</strong>
+      </div>
+      <div class="col-md-1 d-flex align-items-center">
+        <button type="button" class="btn btn-danger btn-sm remove-item">X</button>
+      </div>
+    `;
+    return row;
+  }
+
+  // Add new row
+  addBtn.addEventListener("click", () => {
+    const newRow = makeRow();
+    itemsContainer.appendChild(newRow);
+    initSelect2(); // apply Select2 to new select
+  });
+
+  // Remove row
+  itemsContainer.addEventListener("click", e => {
+    if (e.target.classList.contains("remove-item")) {
+      const row = e.target.closest(".item-row");
+      if (itemsContainer.children.length > 1) {
+        row.remove();
+        calcTotals();
+      }
+    }
+  });
+
+  // Input changes → recalc
+  itemsContainer.addEventListener("input", e => {
+    if (e.target.classList.contains("qty") || e.target.classList.contains("cost")) {
+      calcTotals();
+    }
+  });
+
+  // Select2 handler
+  $(document).on("select2:select", ".product-size", function(e) {
+    handleProductSelect(this);
+  });
+
+  // Fallback for non-Select2
+  itemsContainer.addEventListener("change", e => {
+    if (e.target.classList.contains("product-size")) {
+      handleProductSelect(e.target);
+    }
+  });
+
+  function handleProductSelect(selectEl) {
+    const opt = selectEl.selectedOptions[0];
+    const defaultCost = opt ? opt.getAttribute("data-default-cost") : "";
+    const row = selectEl.closest(".item-row");
+    const costInput = row.querySelector(".cost");
+    if (defaultCost && !costInput.value) costInput.value = defaultCost;
+
+    const qtyInput = row.querySelector(".qty");
+    if (qtyInput && (!qtyInput.value || qtyInput.value === "0")) qtyInput.value = 1;
+
+    // Delay focus so Select2 closes
+    setTimeout(() => {
+      if (qtyInput) { qtyInput.focus(); qtyInput.select(); }
+    }, 100);
+
+    calcTotals();
+  }
+
+  // Keyboard navigation
+  itemsContainer.addEventListener("keydown", e => {
+    const row = e.target.closest(".item-row");
+
+    if (e.target.classList.contains("qty") && e.key === "Enter") {
+      e.preventDefault();
+      const costInput = row.querySelector(".cost");
+      if (costInput) { costInput.focus(); costInput.select(); }
+    }
+
+    if (e.target.classList.contains("cost") && e.key === "Enter") {
+      e.preventDefault();
+      const newRow = makeRow();
+      itemsContainer.appendChild(newRow);
+      initSelect2();
+      calcTotals();
+      const firstSelect = newRow.querySelector(".product-size");
+      if (firstSelect) firstSelect.focus();
+    }
+
+    if (e.ctrlKey && e.key === "Enter") {
+      e.preventDefault();
+      form.submit();
+    }
+  });
+
+  // Totals
+  function calcTotals() {
+    let grand = 0;
+    document.querySelectorAll(".item-row").forEach(row => {
+      const qty = parseFloat(row.querySelector(".qty")?.value) || 0;
+      const cost = parseFloat(row.querySelector(".cost")?.value) || 0;
+      const sub = qty * cost;
+      row.querySelector(".subtotal").textContent = sub.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      grand += sub;
+    });
+    document.getElementById("grandTotal").textContent = grand.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }
+
+  calcTotals();
+
+  // Auto date
+  const dateInput = document.getElementById("purchase_date");
+  if (!dateInput.value) {
+    dateInput.value = new Date().toISOString().split("T")[0];
+  }
+
+  // Init Select2
+  function initSelect2() {
+    document.querySelectorAll('.product-size').forEach(select => {
+      if (!$(select).hasClass('select2-hidden-accessible')) {
+        $(select).select2({
+          placeholder: '-- Product / Size / Unit --',
+          width: '100%'
+        });
+      }
+    });
+  }
+  initSelect2();
+</script>
+
+<style>
+  /* Match Select2 with Bootstrap form-control height */
+  .select2-container .select2-selection--single {
+    height: calc(2.25rem + 2px) !important;  /* same as .form-control */
+    padding: 0.375rem 0.75rem;               /* Bootstrap input padding */
+    font-size: 1rem;
+    line-height: 1.5;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+  }
+
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 1.5rem;  /* center text */
+  }
+
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: calc(2.25rem + 2px) !important;
+    right: 8px;
+  }
+</style>

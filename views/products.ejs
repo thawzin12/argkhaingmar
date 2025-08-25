@@ -1,0 +1,358 @@
+<%- include('datahead.ejs') %>
+
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>Products by Category</h1>
+      </div>
+      <div class="col-sm-6 text-right">
+        <button class="btn btn-success" id="printAllBarcodes">
+          Print All Barcodes
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <div class="mb-3">
+      <select id="category-select" class="form-control w-25 d-inline-block">
+        <option value="">-- Select Category --</option>
+        <% categories.forEach(cat => { %>
+        <option value="<%= cat.category_id %>"><%= cat.name %></option>
+        <% }) %>
+      </select>
+    </div>
+
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Product List</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table
+                class="table table-bordered table-striped table-hover w-100"
+                id="example1"
+              >
+                <thead class="thead-dark">
+                  <tr>
+                    <th>Product Name</th>
+                    <th>Size</th>
+                    <th>Package Type</th>
+                    <th>Cost Price</th>
+                    <th>Sale Price</th>
+                    <th>Barcode</th>
+                    <th>Stock</th>
+                    <th style="width: 200px">Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Edit Price Modal -->
+<div
+  class="modal fade"
+  id="editPriceModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="editPriceModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editPriceModalLabel">
+          Update Product Price
+        </h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-product-id" />
+        <div class="form-group">
+          <label>Cost Price</label>
+          <input type="number" id="edit-cost-price" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label>Sale Price</label>
+          <input type="number" id="edit-sale-price" class="form-control" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-success" id="save-price">Save</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Barcode Modal -->
+<div class="modal fade" id="barcodeModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content text-center p-3" id="barcodePrintArea">
+      <h5 class="mb-2">Product Barcode</h5>
+      <svg id="barcodeDisplay"></svg>
+      <div id="barcodeLabel" class="mt-2 small"></div>
+      <div class="mt-3">
+        <!-- keep inline handler; function is exposed globally below -->
+        <button type="button" class="btn btn-primary" onclick="printBarcode()">
+          Print
+        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden Print Container (for "Print All") -->
+<div id="printArea" style="display: none"></div>
+
+<!-- Libs -->
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+  let table;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    table = $("#example1").DataTable({
+      processing: true,
+      serverSide: false,
+      ajax: {
+        url: "/products/ajax",
+        data: function (d) {
+          d.category_id = $("#category-select").val();
+        },
+      },
+      columns: [
+        { data: "name" },
+        { data: "package_size" },
+        { data: "unit_label" },
+        { data: "cost_price" },
+        { data: "sale_price" },
+        { data: "barcode" },
+        { data: "stock_qty" },
+        {
+          data: null,
+          render: function (data, type, row) {
+            return `
+              <button class="btn btn-sm btn-primary edit-price"
+                      data-id="${row.id}" data-cost="${row.cost_price}" data-sale="${row.sale_price}">
+                Edit
+              </button>
+              <button class="btn btn-sm btn-danger delete-product" data-id="${row.id}">
+                Delete
+              </button>
+              <button class="btn btn-sm btn-info view-barcode"
+                      data-name="${row.name}" data-size="${row.package_size}" data-unit="${row.unit_label}" data-barcode="${row.barcode}">
+                View Barcode
+              </button>`;
+          },
+        },
+      ],
+      dom: "Bfrtip",
+      buttons: ["copy", "excel", "pdf", "print", "colvis"],
+      pageLength: 10,
+    });
+
+    $("#category-select").on("change", () => table.ajax.reload());
+
+    // View Barcode modal
+    $("#example1").on("click", ".view-barcode", function () {
+      const code = $(this).data("barcode");
+      const name = $(this).data("name");
+      const size = $(this).data("size");
+      const unit = $(this).data("unit");
+
+      if (!code) {
+        Swal.fire("No barcode", "This item has no barcode value.", "info");
+        return;
+      }
+
+      JsBarcode("#barcodeDisplay", code, {
+        format: "CODE128",
+        width: 2,
+        height: 50,
+        displayValue: true,
+      });
+      $("#barcodeLabel").html(`${name} - ${size} ${unit}`);
+      $("#barcodeModal").modal("show");
+    });
+
+    // Edit
+    $("#example1").on("click", ".edit-price", function () {
+      $("#edit-product-id").val($(this).data("id"));
+      $("#edit-cost-price").val($(this).data("cost"));
+      $("#edit-sale-price").val($(this).data("sale"));
+      $("#editPriceModal").modal("show");
+    });
+
+    // Save updated price
+    $("#save-price").on("click", function () {
+      const id = $("#edit-product-id").val();
+      const cost = $("#edit-cost-price").val();
+      const sale = $("#edit-sale-price").val();
+
+      fetch(`/products/update-price/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cost_price: cost, sale_price: sale }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            table.ajax.reload(null, false);
+            $("#editPriceModal").modal("hide");
+            Swal.fire({
+              icon: "success",
+              title: "Updated!",
+              text: "Price updated successfully",
+              timer: 2000,
+              showConfirmButton: false,
+            });
+          } else {
+            Swal.fire("Error", "Failed to update price.", "error");
+          }
+        });
+    });
+
+    // Delete
+    $("#example1").on("click", ".delete-product", function () {
+      const id = $(this).data("id");
+      Swal.fire({
+        title: "Delete product?",
+        text: "This cannot be undone.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, delete it!",
+        confirmButtonColor: "#d33",
+      }).then((res) => {
+        if (!res.isConfirmed) return;
+        fetch(`/products/delete/${id}`, { method: "DELETE" })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success) {
+              table.ajax.reload(null, false);
+              Swal.fire({
+                icon: "success",
+                title: "Deleted",
+                timer: 1500,
+                showConfirmButton: false,
+              });
+            } else {
+              Swal.fire("Error", "Failed to delete product.", "error");
+            }
+          });
+      });
+    });
+
+    // Print all visible barcodes
+    $("#printAllBarcodes").on("click", function () {
+      const data = table.rows({ search: "applied" }).data();
+      const work = document.getElementById("printArea");
+      work.innerHTML = "";
+
+      for (let i = 0; i < data.length; i++) {
+        const prod = data[i];
+        const holder = document.createElement("div");
+        holder.className = "label";
+        holder.innerHTML = `
+          <div class="label-inner">
+            <svg id="pbc${i}"></svg>
+            <div class="label-text">${prod.name} - ${prod.package_size} ${prod.unit_label}</div>
+          </div>`;
+        work.appendChild(holder);
+
+        if (prod.barcode) {
+          JsBarcode(`#pbc${i}`, prod.barcode, {
+            format: "CODE128",
+            width: 2,
+            height: 50,
+            displayValue: true,
+          });
+        } else {
+          holder
+            .querySelector(".label-text")
+            .insertAdjacentHTML("afterbegin", "<div>(no barcode)</div>");
+        }
+      }
+
+      const w = window.open("", "", "width=800,height=900");
+      w.document.write(`
+        <html>
+          <head>
+            <title>Print Barcodes</title>
+            <style>
+              @page { margin: 6mm; }
+              body { font-family: Arial, sans-serif; }
+              .sheet { display: flex; flex-wrap: wrap; }
+              .label { width: 60mm; margin: 4mm; text-align: center; }
+              .label .label-text { font-size: 18px; margin-top: 4px; }
+              svg { max-width: 100%; }
+            </style>
+          </head>
+          <body>
+            <div class="sheet">${work.innerHTML}</div>
+          </body>
+        </html>
+      `);
+      w.document.close();
+      w.focus();
+      w.onload = function () {
+        w.print();
+        window.onafterprint = function () {
+          window.close();
+        };
+      };
+    });
+  });
+  function printBarcode() {
+    // get barcode and label
+    const barcodeSVG = document.getElementById("barcodeDisplay").outerHTML;
+    const label = document.getElementById("barcodeLabel").innerHTML;
+
+    // open new print window
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+    <html>
+    <head>
+      <title>Print Barcode</title>
+      <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        svg { width: 200px; height: auto; } /* set barcode size here */
+        .label { margin-top: 10px; font-size: 14px; }
+      </style>
+    </head>
+    <body>
+      ${barcodeSVG}
+      <div class="label">${label}</div>
+      <script>
+        window.onload = function() {
+          window.print();
+          window.onafterprint = function() { window.close(); }
+        }
+      <\/script>
+    </body>
+    </html>
+  `);
+    printWindow.document.close();
+  }
+</script>
+
+<%- include('datafoot.ejs') %>

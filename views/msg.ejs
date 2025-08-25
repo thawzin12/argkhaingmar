@@ -1,0 +1,33 @@
+<% if (typeof success_msg !== "undefined" && success_msg.length > 0) { %>
+<div
+  class="alert alert-success alert-dismissible fade show"
+  role="alert"
+  id="flash-msg"
+>
+  <%= success_msg %>
+  <button
+    type="button"
+    class="close text-white"
+    data-dismiss="alert"
+    aria-label="Close"
+  >
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+<% } %> <% if (typeof error_msg !== "undefined" && error_msg.length > 0) { %>
+<div
+  class="alert alert-danger alert-dismissible fade show"
+  role="alert"
+  id="flash-msg"
+>
+  <%= error_msg %>
+  <button
+    type="button"
+    class="close text-white"
+    data-dismiss="alert"
+    aria-label="Close"
+  >
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+<% } %>

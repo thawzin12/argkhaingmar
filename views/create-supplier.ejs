@@ -1,0 +1,88 @@
+<%- include('datahead.ejs') %>
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>Supplier Form</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="breadcrumb-item active"></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <!-- /.container-fluid -->
+</section>
+<section class="content">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-6">
+        <%- include('msg.ejs') %>
+        <div class="card card-primary">
+          <div class="card-header"><h5>Supplier</h5></div>
+          <form action="/createsupplier" method="POST">
+            <div class="card-body">
+              <div class="form-group">
+                <label>Supplier Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  class="form-control"
+                  value="<%= formData?.name || '' %>"
+                />
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input
+                  type="text"
+                  name="phone"
+                  class="form-control"
+                  value="<%= formData?.phone || '' %>"
+                />
+              </div>
+              <div class="form-group">
+                <label>Address</label>
+                <textarea name="address" class="form-control">
+<%= formData?.address || '' %></textarea
+                >
+              </div>
+            </div>
+            <div class="card-footer">
+              <button type="submit" class="btn btn-success mt-2">
+                Create Supplier
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card card-info">
+          <div class="card-header">
+            <h5>All Suppliers</h5>
+          </div>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% suppliers.forEach(s => { %>
+              <tr>
+                <td><%= s.name %></td>
+                <td><%= s.phone %></td>
+                <td><%= s.address %></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<%- include('datafoot.ejs') %>

@@ -4,6 +4,10 @@ function isValidEmail(email) {
   return emailRegex.test(email);
 }
 
+function isValidSpaceName(name) {
+  return !/^[A-Za-z\s]+$/.test(name);
+}
+
 // Validate Name
 function isValidName(name) {
   const namePattern = /^[a-zA-Z\s]+$/;
@@ -33,6 +37,7 @@ function isValidPassword(password) {
 }
 
 module.exports = {
+  isValidSpaceName,
   isValidEmail,
   isValidName,
   isValidPassword,

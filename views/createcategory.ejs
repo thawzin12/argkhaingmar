@@ -1,0 +1,52 @@
+<%- include('head.ejs') %>
+<!-- Content Header (Page header) -->
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>Category Form</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="breadcrumb-item active"></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <!-- /.container-fluid -->
+</section>
+<!-- Main content -->
+<section class="content">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-6 offset-md-3">
+        <%- include('msg.ejs') %>
+        <div class="card card-primary">
+          <div class="card-header">
+            <h3 class="card-title">Category</h3>
+          </div>
+          <form action="/createcategory" method="post">
+            <div class="card-body">
+              <div class="form-group">
+                <label for="category">Category</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="category"
+                  name="category"
+                  placeholder="category name"
+                />
+              </div>
+            </div>
+            <div class="card-footer">
+              <button type="submit" class="btn button-29">Submit</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /.content -->
+<%- include('foot.ejs') %>

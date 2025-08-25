@@ -9,6 +9,12 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || "localhost",
     dialect: "mysql",
     logging: false,
+    pool: {
+      max: 10, // max connections
+      min: 0, // minimum connections
+      acquire: 60000, // wait max 30s before throwing error
+      idle: 20000, // release idle connections after 10s
+    },
   }
 );
 
