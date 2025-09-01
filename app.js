@@ -14,17 +14,15 @@ app.use(express.static(path.join(__dirname, "public")));
 const SESSION_SECRET = process.env.SESSION_SECRET || "S3cr3t!@#";
 app.use(
   session({
-    secret: SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || "secret",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 8, // 8 hours
+      secure: process.env.NODE_ENV === "production", // only HTTPS
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
     },
   })
 );
-
 app.use(flash());
 app.use((req, res, next) => {
   res.locals.success_msg = req.flash("success_msg");
@@ -61,8 +59,8 @@ app.use("/", productRoute);
 app.use("/", require("./routes/dashboard"));
 
 app.use(express.json());
-app.listen(process.env.PORT, () => {
-  console.log(`The server is listen at ${process.env.PORT}`);
+app.listen(process.env.SERVER_PORT, () => {
+  console.log(`The server is listen at ${process.env.SERVER_PORT}`);
 });
 
 const password = "Thawzin@#12"; // the password you want

@@ -12,10 +12,11 @@ const sequelize = new Sequelize(
   process.env.DB_PASS,
   {
     host: process.env.DB_HOST || "localhost",
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306, // <- specify port here
     dialect: "mysql",
     logging: false,
     dialectOptions: isProduction
-      ? {} // No SSL for InfinityFree
+      ? {} // adjust SSL options if needed
       : {},
     pool: {
       max: 10,
