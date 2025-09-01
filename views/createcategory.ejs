@@ -1,28 +1,29 @@
 <%- include('head.ejs') %>
+
 <!-- Content Header (Page header) -->
 <section class="content-header">
   <div class="container-fluid">
     <div class="row mb-2">
-      <div class="col-sm-6">
+      <div class="col-12 col-sm-6">
         <h1>Category Form</h1>
       </div>
-      <div class="col-sm-6">
+      <div class="col-12 col-sm-6">
         <ol class="breadcrumb float-sm-right">
           <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-          <li class="breadcrumb-item active"></li>
+          <li class="breadcrumb-item active">Category</li>
         </ol>
       </div>
     </div>
   </div>
-  <!-- /.container-fluid -->
 </section>
+
 <!-- Main content -->
 <section class="content">
   <div class="container-fluid">
-    <div class="row">
-      <div class="col-md-6 offset-md-3">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-8 col-lg-6">
         <%- include('msg.ejs') %>
-        <div class="card card-primary">
+        <div class="card card-primary shadow-sm">
           <div class="card-header">
             <h3 class="card-title">Category</h3>
           </div>
@@ -35,11 +36,12 @@
                   class="form-control"
                   id="category"
                   name="category"
-                  placeholder="category name"
+                  placeholder="Category name"
+                  required
                 />
               </div>
             </div>
-            <div class="card-footer">
+            <div class="card-footer d-flex justify-content-end">
               <button type="submit" class="btn btn-primary">Submit</button>
             </div>
           </form>
@@ -48,5 +50,5 @@
     </div>
   </div>
 </section>
-<!-- /.content -->
+
 <%- include('foot.ejs') %>
