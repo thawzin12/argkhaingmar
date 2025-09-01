@@ -19,7 +19,7 @@ const sequelize = new Sequelize(
       ? {} // adjust SSL options if needed
       : {},
     pool: {
-      max: 10,
+      max: 4,
       min: 0,
       acquire: 60000,
       idle: 20000,
