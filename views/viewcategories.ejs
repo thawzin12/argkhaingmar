@@ -1,0 +1,385 @@
+<%- include('datahead.ejs') %>
+
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1>Categories</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="breadcrumb-item active">Categories</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <%- include('msg.ejs') %>
+
+    <div class="card">
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        <h3 class="card-title mb-0">
+          <i class="fas fa-list mr-2"></i> Category List
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table
+            id="categoryTable"
+            class="table table-bordered table-striped w-100"
+          >
+            <thead class="thead-dark">
+              <tr>
+                <th style="width: 60px">No.</th>
+                <th>Name</th>
+                <!-- <th>Description</th> -->
+                <th style="width: 220px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- filled by DataTables -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Edit Category Modal -->
+<div
+  class="modal fade"
+  id="editCategoryModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="editCategoryLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog" role="document">
+    <form id="editCategoryForm" method="post" novalidate>
+      <div class="modal-content">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title" id="editCategoryLabel">Edit Category</h5>
+          <button type="button" class="close" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <input type="hidden" id="edit_category_id" />
+
+          <div class="form-group mb-2">
+            <label for="edit_name">Name</label>
+            <input
+              type="text"
+              id="edit_name"
+              name="name"
+              class="form-control"
+              placeholder="Category name"
+            />
+            <small class="text-danger d-block mt-1" id="err_edit_name"></small>
+          </div>
+
+          <!-- <div class="form-group mb-0">
+            <label for="edit_description">Description</label>
+            <textarea
+              id="edit_description"
+              name="description"
+              class="form-control"
+              rows="3"
+              placeholder="Optional"
+            ></textarea>
+            <small
+              class="text-danger d-block mt-1"
+              id="err_edit_description"
+            ></small>
+          </div> -->
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-warning" id="saveEditBtn">
+            Update
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Category Modal (type-to-confirm) -->
+<div
+  class="modal fade"
+  id="deleteCategoryModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="deleteCategoryLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog" role="document">
+    <form id="deleteCategoryForm" method="post" novalidate>
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="deleteCategoryLabel">Delete Category</h5>
+          <button type="button" class="close text-white" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <input type="hidden" id="delete_category_id" />
+          <p>
+            Type the category name to confirm deletion:
+            <strong id="delete_category_name"></strong>
+          </p>
+          <input
+            type="text"
+            id="delete_input"
+            class="form-control"
+            placeholder="Type category name here"
+          />
+          <small class="text-danger d-block mt-1" id="err_delete_input"></small>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn btn-danger"
+            id="confirmDeleteBtn"
+            disabled
+          >
+            Yes, Delete
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- SweetAlert2 (for toasts) -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+  let catTable;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // DataTable
+    catTable = $("#categoryTable").DataTable({
+      processing: true,
+      serverSide: false,
+      ajax: { url: "/categories/ajax" },
+      columns: [
+        {
+          data: null,
+          render: function (data, type, row, meta) {
+            return meta.row + 1;
+          },
+        },
+        { data: "name" },
+
+        {
+          data: null,
+          orderable: false,
+          render: function (data, type, row) {
+            return `
+              <button class="btn btn-sm btn-primary edit-category"
+                      data-id="${row.category_id}" data-name="${
+              row.name
+            }" data-description="${row.description || ""}">
+                <i class="fa fa-edit"></i> Edit
+              </button>
+              <button class="btn btn-sm btn-danger delete-category"
+                      data-id="${row.category_id}" data-name="${row.name}">
+                <i class="fa fa-trash"></i> Delete
+              </button>`;
+          },
+        },
+      ],
+      pageLength: 10,
+      dom: "Bflrtip",
+
+      buttons: [
+        {
+          extend: "copy",
+          text: '<i class="fas fa-copy"></i> Copy',
+          className: "bg-primary",
+          title: "Category List",
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "excel",
+          text: '<i class="fas fa-file-excel"></i>Excel',
+          className: "bg-success",
+          title: "Category List",
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "pdf",
+          className: "bg-danger",
+          text: '<i class="fas fa-file-pdf"></i> PDF Report',
+          title: "Category List - KhaingMar", // PDF Title
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "print",
+          className: "bg-info",
+          text: '<i class="fas fa-print"></i> Print',
+          title: "Category List - KhaingMar", // Print Header Title
+          customize: function (win) {
+            // Optional: style print preview
+            $(win.document.body)
+              .css("font-size", "16pt")
+              .prepend(
+                '<h3 style="text-align:center; color:#007bff;">Category List</h3>'
+              );
+          },
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "colvis",
+          className: "bg-indigo",
+          text: '<i class="fas fa-columns"></i> Columns',
+          title: "Purchase Report",
+        },
+      ],
+
+      language: {
+        emptyTable:
+          "<div style='color:black; font-weight:bold;'><h1>📭 </h1>No Category Found</div>",
+      },
+    });
+
+    // Open Edit modal
+    $("#categoryTable").on("click", ".edit-category", function () {
+      const id = this.dataset.id;
+      const name = this.dataset.name || "";
+      const description = this.dataset.description || "";
+
+      clearEditErrors();
+      $("#edit_category_id").val(id);
+      $("#edit_name").val(name);
+      $("#edit_description").val(description);
+      $("#editCategoryModal").modal("show");
+    });
+
+    // Submit Edit via fetch (JSON)
+    $("#editCategoryForm").on("submit", function (e) {
+      e.preventDefault();
+      clearEditErrors();
+
+      const id = $("#edit_category_id").val();
+      const payload = {
+        name: $("#edit_name").val(),
+        description: $("#edit_description").val(),
+      };
+
+      fetch(`/categories/update/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res.success) {
+            $("#editCategoryModal").modal("hide");
+            catTable.ajax.reload(null, false);
+            Swal.fire({
+              icon: "success",
+              title: "Updated!",
+              text: res.message || "Category updated.",
+              timer: 1800,
+              showConfirmButton: false,
+            });
+          } else {
+            if (res.errors) showEditErrors(res.errors);
+            if (res.message)
+              Swal.fire({ icon: "error", title: "Error", text: res.message });
+          }
+        })
+        .catch(() =>
+          Swal.fire({ icon: "error", title: "Error", text: "Update failed." })
+        );
+    });
+
+    // Open Delete modal
+    $("#categoryTable").on("click", ".delete-category", function () {
+      const id = this.dataset.id;
+      const name = this.dataset.name || "";
+
+      $("#delete_category_id").val(id);
+      $("#delete_category_name").text(name);
+      $("#delete_input").val("");
+      $("#err_delete_input").text("");
+      $("#confirmDeleteBtn").prop("disabled", true);
+
+      $("#deleteCategoryModal").modal("show");
+    });
+
+    // Enable delete only if typed name matches
+    $("#delete_input").on("input", function () {
+      const expected = ($("#delete_category_name").text() || "").trim();
+      const val = ($(this).val() || "").trim();
+      $("#confirmDeleteBtn").prop("disabled", val !== expected);
+      $("#err_delete_input").text(
+        val && val !== expected ? "Entered name does not match." : ""
+      );
+    });
+
+    // Submit Delete via fetch (JSON)
+    $("#deleteCategoryForm").on("submit", function (e) {
+      e.preventDefault();
+
+      const id = $("#delete_category_id").val();
+      const confirmName = $("#delete_input").val().trim();
+
+      fetch(`/categories/delete/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmName }),
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res.success) {
+            $("#deleteCategoryModal").modal("hide");
+            catTable.ajax.reload(null, false);
+            Swal.fire({
+              icon: "success",
+              title: "Deleted",
+              text: res.message || "Category deleted.",
+              timer: 1500,
+              showConfirmButton: false,
+            });
+          } else {
+            $("#err_delete_input").text(res.message || "Delete failed.");
+          }
+        })
+        .catch(() => {
+          $("#err_delete_input").text(
+            "Delete failed due to a network/server error."
+          );
+        });
+    });
+
+    // helpers
+    function clearEditErrors() {
+      $("#err_edit_name").text("");
+      $("#err_edit_description").text("");
+    }
+    function showEditErrors(errors) {
+      if (errors.name) $("#err_edit_name").text(errors.name);
+      if (errors.description)
+        $("#err_edit_description").text(errors.description);
+    }
+  });
+</script>
+
+<%- include('datafoot.ejs') %>

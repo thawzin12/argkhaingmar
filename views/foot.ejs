@@ -65,6 +65,22 @@
       setTimeout(() => msg.remove(), 500);
     }
   }, 3000); // hide after 3 seconds
+  document.addEventListener("DOMContentLoaded", () => {
+  if (localStorage.getItem("fullscreen") === "true") {
+    document.documentElement.requestFullscreen();
+  }
+
+  document.querySelector('[data-widget="fullscreen"]').addEventListener("click", () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      localStorage.setItem("fullscreen", "true");
+    } else {
+      document.exitFullscreen();
+      localStorage.setItem("fullscreen", "false");
+    }
+  });
+});
+
   </script>
   </body>
 </html>

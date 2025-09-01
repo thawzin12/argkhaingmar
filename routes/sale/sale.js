@@ -30,7 +30,11 @@ router.get("/salevoucher", async (req, res) => {
       ],
     });
 
-    res.render("sale_voucher", { customers, productSizes });
+    res.render("sale_voucher", {
+      activePage: "sale-voucher",
+      customers,
+      productSizes,
+    });
   } catch (err) {
     console.error(err);
     req.flash("error_msg", "Failed to load sale voucher page.");
@@ -61,39 +65,55 @@ router.post("/salevoucher", async (req, res) => {
       });
     }
 
-    // sanitize qty/unit price
-    items = items.map((i) => ({
-      ...i,
-      quantity: Math.max(1, parseInt(i.quantity) || 1),
-      unit_price: Number(i.unit_price) || 0,
-      subtotal: Number(
-        i.subtotal || (Number(i.unit_price) || 0) * (parseInt(i.quantity) || 1)
-      ),
-    }));
+    // sanitize qty/unit price/discount
+    items = items.map((i) => {
+      const qty = Math.max(1, parseInt(i.quantity) || 1);
+      const unit = Number(i.unit_price) || 0;
+      const lineTotal = unit * qty;
+      let disc = Number(i.discount || 0);
+      if (!Number.isFinite(disc) || disc < 0) disc = 0;
+      if (disc > lineTotal) disc = lineTotal; // cap
+      const net = Number((lineTotal - disc).toFixed(2));
+      return {
+        ...i,
+        quantity: qty,
+        unit_price: unit,
+        discount: disc,
+        subtotal: net, // store net (after line discount)
+      };
+    });
 
-    // base total BEFORE discount
-    const totalBeforeDiscount = items.reduce(
+    // gross/line-discounts/subtotal after line discounts
+    const items_gross_total = items.reduce(
+      (s, i) => s + Number(i.unit_price) * Number(i.quantity),
+      0
+    );
+    const items_discount_total = items.reduce(
+      (s, i) => s + Number(i.discount || 0),
+      0
+    );
+    const total_after_line_discounts = items.reduce(
       (s, i) => s + Number(i.subtotal),
       0
     );
 
-    // compute discount
+    // compute overall discount on subtotal-after-line
     let discType = (discountType || "amount").toString();
     let discVal = Number(discountValue || 0);
     if (!Number.isFinite(discVal) || discVal < 0) discVal = 0;
 
-    let discountAmount = 0;
+    let overall_discount = 0;
     if (discType === "percent") {
       if (discVal > 100) discVal = 100;
-      discountAmount = totalBeforeDiscount * (discVal / 100);
+      overall_discount = total_after_line_discounts * (discVal / 100);
     } else {
-      discountAmount = discVal;
+      overall_discount = discVal;
     }
-    if (discountAmount > totalBeforeDiscount)
-      discountAmount = totalBeforeDiscount;
+    if (overall_discount > total_after_line_discounts)
+      overall_discount = total_after_line_discounts;
 
     const totalAmount = Number(
-      (totalBeforeDiscount - discountAmount).toFixed(2)
+      (total_after_line_discounts - overall_discount).toFixed(2)
     );
 
     // paid
@@ -115,15 +135,10 @@ router.post("/salevoucher", async (req, res) => {
     });
 
     if (!customer) {
-      // Optional: guard to avoid accidental duplicates if phone omitted:
-      // If exact name+address exists but phone differs, we still create new because uniqueness is triple.
       customer = await Customer.create(
         { name, address, phone },
         { transaction: t }
       );
-    } else {
-      // Nothing to update for identity fields; keep as-is.
-      // If you keep other fields on Customer, update them here as needed.
     }
 
     // Stock check
@@ -156,14 +171,18 @@ router.post("/salevoucher", async (req, res) => {
     )}`;
 
     // Create sale
+    const total_combined_discount = Number(
+      (items_discount_total + overall_discount).toFixed(2)
+    );
+
     const sale = await Sale.create(
       {
         customer_id: customer.customer_id,
         invoice_number: invoiceNumber,
         sale_date: now,
-        total_amount: totalAmount, // net after discount
+        total_amount: totalAmount, // final net after overall discount
         actual_income: pay,
-        discount: discountAmount,
+        discount: total_combined_discount, // store combined discounts
         status,
         uid: req.user ? req.user.id : 1,
       },
@@ -178,7 +197,8 @@ router.post("/salevoucher", async (req, res) => {
           size_id: i.size_id,
           quantity: Number(i.quantity),
           unit_price: Number(i.unit_price),
-          subtotal: Number(i.subtotal),
+          discount: Number(i.discount || 0), // NEW: per-item discount
+          subtotal: Number(i.subtotal), // net after line discount
         },
         { transaction: t }
       );
@@ -208,8 +228,14 @@ router.post("/salevoucher", async (req, res) => {
       success: true,
       invoice_number: invoiceNumber,
       items,
-      total_before_discount: totalBeforeDiscount,
-      discount: discountAmount,
+      // Compatibility + richer totals for printing
+      items_gross_total,
+      items_discount_total,
+      total_after_line_discounts,
+      overall_discount,
+      // legacy fields kept meaningful:
+      total_before_discount: items_gross_total, // before any discounts
+      discount: total_combined_discount, // all discounts combined
       total_amount: totalAmount,
       paid_amount: pay,
       balance,

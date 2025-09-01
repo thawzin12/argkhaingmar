@@ -64,13 +64,12 @@
   </ul>
 </nav>
 <!-- /.navbar -->
-
 <!-- Main Sidebar Container -->
 <aside class="main-sidebar sidebar-dark-success elevation-3">
   <!-- Brand Logo -->
-  <a href="index3.html" class="brand-link">
+  <a href="/" class="brand-link">
     <img
-      src="dist/img/AdminLTELogo.png"
+      src="/dist/img/image.png"
       alt="AdminLTE Logo"
       class="brand-image img-circle elevation-3"
       style="opacity: 1"
@@ -80,12 +79,12 @@
 
   <!-- Sidebar -->
   <div class="sidebar">
-    <!-- Sidebar user panel (optional) -->
+    <!-- Sidebar user panel -->
     <div class="user-panel mt-3 pb-3 mb-3 d-flex">
       <div class="image">
         <img
-          src="dist/img/user2-160x160.jpg"
-          class="img-circle elevation-2"
+          src="/dist/img/thawzin.png"
+          class="img-circle elevation-1"
           alt="User Image"
         />
       </div>
@@ -119,55 +118,58 @@
         role="menu"
         data-accordion="false"
       >
-        <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
-        <li class="nav-item menu-open">
-          <a href="#" class="nav-link active">
+        <!-- Dashboard -->
+        <li class="nav-item">
+          <a
+            href="/dashboard"
+            class="nav-link <%= activePage === 'dashboard' ? 'active' : '' %>"
+          >
             <i class="nav-icon fas fa-tachometer-alt"></i>
-            <p>
-              Dashboard
-              <i class="right fas fa-angle-left"></i>
-            </p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="" class="nav-link active">
-                <i class="fa fa-store nav-icon"></i>
-                <p>Shop1</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="" class="nav-link">
-                <i class="fa fa-store nav-icon"></i>
-                <p>Shop2</p>
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <li class="nav-item">
-          <a href="/createsize" class="nav-link">
-            <i class="nav-icon fas fa-th"></i>
-            <p>
-              Product Size
-              <span class="right badge badge-danger">New</span>
-            </p>
+            <p>Dashboard</p>
           </a>
         </li>
+        <!-- suppliers -->
         <li class="nav-item">
-          <a href="/createunit" class="nav-link">
-            <i class="nav-icon fas fa-th"></i>
-            <p>
-              Package Type
-              <span class="right badge badge-danger">New</span>
-            </p>
+          <a
+            href="/createsupplier"
+            class="nav-link <%= activePage === 'supplier' ? 'active' : '' %>"
+          >
+            <i class="nav-icon fas fa-handshake"></i>
+            <p>Supplier</p>
           </a>
         </li>
 
+        <!-- Product Size -->
         <li class="nav-item">
-          <a href="#" class="nav-link">
+          <a
+            href="/createsize"
+            class="nav-link <%= activePage === 'size' ? 'active' : '' %>"
+          >
+            <i class="nav-icon fas fa-ruler-combined"></i>
+            <p>Product Size</p>
+          </a>
+        </li>
+
+        <!-- Package Type -->
+        <li class="nav-item">
+          <a
+            href="/createunit"
+            class="nav-link <%= activePage === 'unit' ? 'active' : '' %>"
+          >
+            <i class="nav-icon fas fa-cube"></i>
+            <p>Package Type</p>
+          </a>
+        </li>
+
+        <!-- Category -->
+        <li
+          class="nav-item has-treeview <%= activePage && activePage.startsWith('category') ? 'menu-open' : '' %>"
+        >
+          <a
+            href="#"
+            class="nav-link <%= activePage && activePage.startsWith('category') ? 'active' : '' %>"
+          >
             <i class="nav-icon fa fa-folder"></i>
-            <!-- folder = category -->
             <p>
               Category
               <i class="fas fa-angle-left right"></i>
@@ -175,13 +177,19 @@
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
-              <a href="/createcategory" class="nav-link">
+              <a
+                href="/createcategory"
+                class="nav-link <%= activePage === 'category-create' ? 'active' : '' %>"
+              >
                 <i class="fa fa-folder-plus nav-icon"></i>
                 <p>Create Category</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="/category" class="nav-link">
+              <a
+                href="/categories"
+                class="nav-link <%= activePage === 'category-list' ? 'active' : '' %>"
+              >
                 <i class="fa fa-tags nav-icon"></i>
                 <p>View Category</p>
               </a>
@@ -189,10 +197,15 @@
           </ul>
         </li>
 
-        <li class="nav-item">
-          <a href="#" class="nav-link">
+        <!-- Product -->
+        <li
+          class="nav-item has-treeview <%= activePage && activePage.startsWith('product') ? 'menu-open' : '' %>"
+        >
+          <a
+            href="#"
+            class="nav-link <%= activePage && activePage.startsWith('product') ? 'active' : '' %>"
+          >
             <i class="nav-icon fa fa-boxes"></i>
-            <!-- boxes = products -->
             <p>
               Product
               <i class="fas fa-angle-left right"></i>
@@ -200,13 +213,19 @@
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
-              <a href="/createproduct" class="nav-link">
+              <a
+                href="/createproduct"
+                class="nav-link <%= activePage === 'product-create' ? 'active' : '' %>"
+              >
                 <i class="fa fa-plus-square nav-icon"></i>
                 <p>Create Product</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="/products" class="nav-link">
+              <a
+                href="/products"
+                class="nav-link <%= activePage === 'product-list' ? 'active' : '' %>"
+              >
                 <i class="fa fa-box nav-icon"></i>
                 <p>View Product</p>
               </a>
@@ -214,9 +233,15 @@
           </ul>
         </li>
 
-        <li class="nav-item has-treeview">
-          <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-shopping-cart"></i>
+        <!-- Purchase -->
+        <li
+          class="nav-item has-treeview <%= activePage && activePage.startsWith('purchase') ? 'menu-open' : '' %>"
+        >
+          <a
+            href="#"
+            class="nav-link <%= activePage && activePage.startsWith('purchase') ? 'active' : '' %>"
+          >
+            <i class="nav-icon fas fa-shopping-basket"></i>
             <p>
               Purchase
               <i class="right fas fa-angle-left"></i>
@@ -224,13 +249,19 @@
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
-              <a href="/createpurchase" class="nav-link">
+              <a
+                href="/createpurchase"
+                class="nav-link <%= activePage === 'purchase-create' ? 'active' : '' %>"
+              >
                 <i class="fas fa-plus nav-icon"></i>
                 <p>Purchase Enroll</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="/purchases" class="nav-link">
+              <a
+                href="/purchases"
+                class="nav-link <%= activePage === 'purchase-list' ? 'active' : '' %>"
+              >
                 <i class="fas fa-list nav-icon"></i>
                 <p>Purchase Record</p>
               </a>
@@ -238,9 +269,15 @@
           </ul>
         </li>
 
-        <li class="nav-item has-treeview">
-          <a href="#" class="nav-link">
-            <i class="nav-icon fas fa-shopping-cart"></i>
+        <!-- Sales -->
+        <li
+          class="nav-item has-treeview <%= activePage && activePage.startsWith('sale') ? 'menu-open' : '' %>"
+        >
+          <a
+            href="#"
+            class="nav-link <%= activePage && activePage.startsWith('sale') ? 'active' : '' %>"
+          >
+            <i class="nav-icon fas fa-cash-register"></i>
             <p>
               Sales
               <i class="right fas fa-angle-left"></i>
@@ -248,18 +285,70 @@
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
-              <a href="/salevoucher" class="nav-link">
+              <a
+                href="/salevoucher"
+                class="nav-link <%= activePage === 'sale-voucher' ? 'active' : '' %>"
+              >
                 <i class="fas fa-plus nav-icon"></i>
                 <p>Sale Voucher</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="/purchases" class="nav-link">
+              <a
+                href="/sales"
+                class="nav-link <%= activePage === 'sale-list' ? 'active' : '' %>"
+              >
                 <i class="fas fa-list nav-icon"></i>
-                <p>Purchase Record</p>
+                <p>Sale Record</p>
               </a>
             </li>
           </ul>
+        </li>
+
+        <!-- Reports -->
+        <li
+          class="nav-item has-treeview <%= activePage && (activePage === 'daily-income' || activePage === 'monthly-income') ? 'menu-open' : '' %>"
+        >
+          <a
+            href="#"
+            class="nav-link <%= activePage && (activePage === 'daily-income' || activePage === 'monthly-income') ? 'active' : '' %>"
+          >
+            <i class="nav-icon fas fa-chart-line"></i>
+            <p>
+              Reports
+              <i class="right fas fa-angle-left"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a
+                href="/daily"
+                class="nav-link <%= activePage === 'daily-income' ? 'active' : '' %>"
+              >
+                <i class="fas fa-calendar-day nav-icon"></i>
+                <p>Daily Income</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                href="/monthly"
+                class="nav-link <%= activePage === 'monthly-income' ? 'active' : '' %>"
+              >
+                <i class="fas fa-calendar-alt nav-icon"></i>
+                <p>Monthly Income</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <li class="nav-item">
+          <a
+            href="/viewcustomer"
+            class="nav-link <%= activePage === 'customer-summary' ? 'active' : '' %>"
+          >
+            <i class="nav-icon fas fa-users"></i>
+            <p>Customer</p>
+          </a>
         </li>
       </ul>
     </nav>
@@ -267,3 +356,43 @@
   </div>
   <!-- /.sidebar -->
 </aside>
+<!-- 
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const fullscreenBtn = document.querySelector(
+      '[data-widget="fullscreen"] i'
+    );
+
+    // Update icon if last state was fullscreen
+    if (localStorage.getItem("fullscreen") === "true") {
+      fullscreenBtn.classList.remove("fa-expand-arrows-alt");
+      fullscreenBtn.classList.add("fa-compress-arrows-alt");
+    }
+
+    // Custom click toggle
+    document
+      .querySelector('[data-widget="fullscreen"]')
+      .addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().then(() => {
+            localStorage.setItem("fullscreen", "true");
+            fullscreenBtn.classList.remove("fa-expand-arrows-alt");
+            fullscreenBtn.classList.add("fa-compress-arrows-alt");
+          });
+        } else {
+          document.exitFullscreen().then(() => {
+            localStorage.setItem("fullscreen", "false");
+            fullscreenBtn.classList.remove("fa-compress-arrows-alt");
+            fullscreenBtn.classList.add("fa-expand-arrows-alt");
+          });
+        }
+      });
+    if (localStorage.getItem("fullscreen") === "true") {
+      setTimeout(() => {
+        if (confirm("Do you want to re-enter fullscreen?")) {
+          document.documentElement.requestFullscreen();
+        }
+      }, 500);
+    }
+  });
+</script> -->

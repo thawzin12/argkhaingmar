@@ -1,0 +1,163 @@
+<%- include('datahead.ejs') %>
+<link rel="stylesheet" href="custom/shadow.css">
+
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6"><h1>Monthly Income Report</h1></div>
+      <div class="col-sm-6 text-right">
+        <input
+          type="month"
+          id="report-month"
+          class="form-control d-inline w-auto"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <!-- Summary -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <div class="alert alert-info">
+          <strong>Total Income:</strong> <span id="m-total-income">0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card shadow-green">
+      <div class="card-header bg-success text-white">
+        <h5 class="card-title mb-0">Monthly Income Details</h5>
+      </div>
+      <div class="card-body shadow-lg">
+        <div class="table-responsive">
+          <table
+            class="table table-bordered table-striped table-hover w-100"
+            id="monthlyIncomeTable"
+          >
+            <thead class="bg-success">
+              <tr>
+                <th>Payment Date</th>
+                <th>Voucher #</th>
+                <th>Customer</th>
+                <th>Address</th>
+                <th>Phone</th>
+                <th>Income</th>
+                <th>Sale Date</th 
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // default month = current
+    const now = new Date();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const defaultMonth = `${now.getFullYear()}-${m}`;
+    const monthInput = document.getElementById("report-month");
+    if (!monthInput.value) monthInput.value = defaultMonth;
+
+    const totalIncome = document.getElementById("m-total-income");
+
+    const table = $("#monthlyIncomeTable").DataTable({
+      ajax: {
+        url: "/reports/monthly/ajax",
+        data: function (d) {
+          d.month = $("#report-month").val();
+        },
+        dataSrc: function (json) {
+          let income = 0;
+          json.forEach((r) => {
+            income += parseFloat(r.income || 0);
+          });
+          totalIncome.textContent = income.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          });
+          return json;
+        },
+        error: function () {
+          console.error("Failed to load monthly income.");
+        },
+      },
+      columns: [
+        { data: "payment_date" },
+        { data: "invoice_number" },
+        { data: "customer_name" },
+        { data: "address" },
+        { data: "phone" },
+        {
+          data: "income",
+          render: (d) =>
+            parseFloat(d || 0).toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+            }),
+          className: "text-right",
+        },
+        { data: "sale_date" },
+      ],
+      order: [[4, "desc"]],
+      dom: "Bflrtip",
+      buttons: [
+        {
+          extend: "copy",
+          text: '<i class="fas fa-copy"></i> Copy',
+          title: "Monthly Income Report",
+          className: "bg-primary",
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "excel",
+          text: '<i class="fas fa-file-excel"></i> Excel',
+          title: "Monthly Income Report",
+          className: "bg-success",
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "pdf",
+          text: '<i class="fas fa-file-pdf"></i> PDF',
+          title: "Monthly Income Report",
+          className: "bg-danger",
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "print",
+          text: '<i class="fas fa-print"></i> Print',
+          className: "bg-info",
+          exportOptions: { columns: ":visible" },
+          title: "Monthly Income Report",
+          customize(win) {
+            $(win.document.body)
+              .css("font-size", "12pt")
+              .prepend(
+                '<h3 style="text-align:center; color:#007bff;">Monthly Income</h3>'
+              );
+          },
+        },
+        { 
+         extend: "colvis",
+         text: '<i class="fas fa-columns"></i> Columns',
+         className: "bg-indigo"
+        }
+      ],
+      language: {
+        emptyTable:
+          "<div style='color:black; font-weight:bold;'><h4>📭 No payments</h4>Try another month.</div>",
+      },
+      pageLength: 10,
+      deferLoading: 0,
+    });
+
+    $("#report-month").on("change", () => table.ajax.reload());
+  });
+</script>
+
+<%- include('datafoot.ejs') %>

@@ -1,0 +1,38 @@
+/* Custom shadow with color */
+.shadow-blue {
+  box-shadow: 0 0 20px 10px rgba(0, 123, 255, 0.5); /* Blue shadow */
+}
+
+.shadow-red {
+  box-shadow: 0 10px 20px rgba(220, 53, 69, 0.5); /* Red shadow */
+}
+
+.shadow-green {
+  box-shadow: 0 0 20px 10px rgba(40, 167, 69, 0.5); /* Green shadow */
+}
+
+.shadow-info {
+  box-shadow: 0 0 20px 10px rgba(23, 162, 184, 0.6); /* Green shadow */
+}
+/* Use Bootstrap variable --bs-card-bg for shadow color */
+.card.auto-shadow {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); /* fallback */
+  box-shadow: 0 6px 20px var(--card-shadow-color, rgba(0, 0, 0, 0.25));
+}
+
+/* Define shadow color based on card background */
+.card.bg-primary {
+  --card-shadow-color: rgba(13, 110, 253, 0.5); /* Bootstrap primary */
+}
+
+.card.bg-success {
+  --card-shadow-color: rgba(25, 135, 84, 0.5); /* Bootstrap success */
+}
+
+.card.bg-danger {
+  --card-shadow-color: rgba(220, 53, 69, 0.5); /* Bootstrap danger */
+}
+
+.card.bg-warning {
+  --card-shadow-color: rgba(255, 193, 7, 0.5); /* Bootstrap warning */
+}

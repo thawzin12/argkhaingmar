@@ -16,64 +16,6 @@ const {
   Unit,
   sequelize,
 } = require("../../models");
-
-router.get("/createsupplier", async (req, res) => {
-  try {
-    const suppliers = await Supplier.findAll({ order: [["name", "ASC"]] });
-    res.render("create-supplier", {
-      suppliers,
-    });
-  } catch (err) {
-    console.error(err);
-    req.flash("error_msg", "Failed to load suppliers.");
-    res.redirect("/");
-  }
-});
-
-// POST Create Supplier
-router.post("/createsupplier", async (req, res) => {
-  const t = await sequelize.transaction();
-  try {
-    const { name, phone, address } = req.body;
-
-    // Preserve form data
-    req.flash("formData", req.body);
-
-    // Validation
-    if (!name || !phone || !address) {
-      req.flash("error_msg", "All fields must filled!");
-      return res.redirect("/createsupplier");
-    }
-    if (!isValidSpaceName.test(name)) {
-      req.flash("error_msg", "name can contain only letters and spaces!");
-      return res.redirect("/createsupplier");
-    }
-
-    // Check for duplicates
-    const existing = await Supplier.findOne({
-      where: { name },
-      transaction: t,
-    });
-    if (existing) {
-      await t.rollback();
-      req.flash("error_msg", `Supplier "${name}" already exists!`);
-      return res.redirect("/createsupplier");
-    }
-
-    // Create supplier
-    await Supplier.create({ name, phone, address }, { transaction: t });
-
-    await t.commit();
-    req.flash("success_msg", "Supplier created successfully!");
-    res.redirect("/createsupplier");
-  } catch (err) {
-    await t.rollback();
-    console.error(err);
-    req.flash("error_msg", "Something went wrong: " + err.message);
-    res.redirect("/createsupplier");
-  }
-});
-
 router.get("/createpurchase", async (req, res) => {
   try {
     const suppliers = await Supplier.findAll({ order: [["name", "ASC"]] });
@@ -93,6 +35,7 @@ router.get("/createpurchase", async (req, res) => {
     });
 
     res.render("create_purchase", {
+      activePage: "purchase-create",
       suppliers,
       productSizes,
       // inline errors + form data
@@ -181,6 +124,7 @@ router.post("/createpurchase", async (req, res) => {
 
       return res.status(422).render("create_purchase", {
         suppliers,
+        activePage: "purchase-create",
         productSizes,
         errors,
         itemErrors,
@@ -226,6 +170,7 @@ router.post("/createpurchase", async (req, res) => {
       return res.status(422).render("create_purchase", {
         suppliers,
         productSizes,
+        activePage: "purchase-create",
         errors,
         itemErrors,
         formData: {
@@ -327,7 +272,9 @@ router.post("/createpurchase", async (req, res) => {
 });
 
 // View purchases page
-router.get("/purchases", (req, res) => res.render("purchases"));
+router.get("/purchases", (req, res) =>
+  res.render("purchases", { activePage: "purchase-list" })
+);
 
 // Add partial/full payment
 router.post("/purchases/pay/:id", async (req, res) => {

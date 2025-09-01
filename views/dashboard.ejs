@@ -1,0 +1,232 @@
+<%- include('head.ejs') %>
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6"><h1 class="m-0">Dashboard</h1></div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="/">Home</a></li>
+          <li class="breadcrumb-item active">Dashboard</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="content">
+  <div class="container-fluid">
+    <!-- Counts -->
+    <div class="row">
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+          <div class="inner">
+            <h3><%= categoryCount %></h3>
+            <p>Categories</p>
+          </div>
+          <div class="icon"><i class="fas fa-tags"></i></div>
+          <a href="/categories" class="small-box-footer">
+            More info <i class="fas fa-arrow-circle-right"></i>
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+          <div class="inner">
+            <h3><%= productCount %></h3>
+            <p>Products</p>
+          </div>
+          <div class="icon"><i class="fas fa-boxes"></i></div>
+          <a href="/products" class="small-box-footer">
+            More info <i class="fas fa-arrow-circle-right"></i>
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+          <div class="inner">
+            <h3><%= supplierCount %></h3>
+            <p>Suppliers</p>
+          </div>
+          <div class="icon"><i class="fas fa-handshake"></i></div>
+          <a href="/createsupplier" class="small-box-footer">
+            More info <i class="fas fa-arrow-circle-right"></i>
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+          <div class="inner">
+            <h3><%= customerCount %></h3>
+            <p>Customers</p>
+          </div>
+          <div class="icon"><i class="fas fa-users"></i></div>
+          <a href="/viewcustomer" class="small-box-footer">
+            More info <i class="fas fa-arrow-circle-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Income -->
+    <div class="row">
+      <div class="col-lg-6 col-12">
+        <div class="small-box bg-primary">
+          <div class="inner">
+            <h3>$<%= todayIncome?todayIncome.toFixed(2):0 %></h3>
+            <p>Today’s Income</p>
+          </div>
+          <div class="icon"><i class="fas fa-calendar-day"></i></div>
+        </div>
+      </div>
+      <div class="col-lg-6 col-12">
+        <div class="small-box bg-secondary">
+          <div class="inner">
+            <h3>$<%= monthIncome?monthIncome.toFixed(2):0 %></h3>
+            <p>This Month’s Income</p>
+          </div>
+          <div class="icon"><i class="fas fa-calendar-alt"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sales Chart -->
+    <div class="card">
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <h3 class="card-title">Sales Overview</h3>
+        <div>
+          <!-- Scale Toggle -->
+          <div class="btn-group mr-3 mb-3" role="group">
+            <button
+              class="btn btn-outline-success active"
+              id="linearBtn"
+              onclick="setScale('linear')"
+            >
+              Linear
+            </button>
+            <button
+              class="btn btn-outline-success"
+              id="logBtn"
+              onclick="setScale('logarithmic')"
+            >
+              Logarithmic
+            </button>
+          </div>
+
+          <!-- Tabs -->
+          <ul class="nav nav-pills card-header-pills ml-auto">
+            <li class="nav-item">
+              <a class="nav-link active" data-toggle="tab" href="#chart7days"
+                >Last 7 Days</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-toggle="tab" href="#chartMonth"
+                >This Month</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-toggle="tab" href="#chart12months"
+                >Last 12 Months</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="tab-content">
+          <!-- 7 days -->
+          <div class="tab-pane fade show active" id="chart7days">
+            <canvas id="chart7daysCanvas" height="150"></canvas>
+          </div>
+          <!-- This Month -->
+          <div class="tab-pane fade" id="chartMonth">
+            <canvas id="chartMonthCanvas" height="150"></canvas>
+          </div>
+          <!-- Last 12 Months -->
+          <div class="tab-pane fade" id="chart12months">
+            <canvas id="chart12monthsCanvas" height="150"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  let currentScale = 'linear'; // default scale
+
+  // Function to create chart with dynamic scale
+  function createChart(ctx, type, labels, data, color, bgColor) {
+    return new Chart(ctx, {
+      type: type,
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Income',
+          data: data,
+          borderColor: color,
+          backgroundColor: bgColor,
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            type: currentScale,
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  // Initialize all charts
+  const chart7days = createChart(
+    document.getElementById('chart7daysCanvas'),
+    'line',
+    <%- JSON.stringify(last7Days) %>,
+    <%- JSON.stringify(last7DaysIncome) %>,
+    'rgba(60,141,188,1)',
+    'rgba(60,141,188,0.2)'
+  );
+
+  const chartMonth = createChart(
+    document.getElementById('chartMonthCanvas'),
+    'bar',
+    <%- JSON.stringify(thisMonthDays) %>,
+    <%- JSON.stringify(thisMonthIncome) %>,
+    'rgba(40,167,69,1)',
+    'rgba(40,167,69,0.7)'
+  );
+
+  const chart12months = createChart(
+    document.getElementById('chart12monthsCanvas'),
+    'line',
+    <%- JSON.stringify(last12Months) %>,
+    <%- JSON.stringify(last12MonthsIncome) %>,
+    'rgba(255,193,7,1)',
+    'rgba(255,193,7,0.2)'
+  );
+
+  // Function to change scale dynamically
+  function setScale(scale) {
+    currentScale = scale;
+
+    [chart7days, chartMonth, chart12months].forEach(chart => {
+      chart.options.scales.y.type = currentScale;
+      chart.update();
+    });
+
+    // Toggle active button
+    document.getElementById('linearBtn').classList.toggle('active', scale === 'linear');
+    document.getElementById('logBtn').classList.toggle('active', scale === 'logarithmic');
+  }
+</script>
+
+<%- include('foot.ejs') %>

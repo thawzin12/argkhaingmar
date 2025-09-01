@@ -7,17 +7,6 @@
         <h1>Products by Category</h1>
       </div>
       <div class="col-sm-6 text-right">
-        <div class="d-inline-block mr-2">
-          <label class="mr-2">Subtotal by:</label>
-          <select
-            id="subtotal-toggle"
-            class="form-control d-inline-block"
-            style="width: 150px"
-          >
-            <option value="cost">Cost Price</option>
-            <option value="sale">Sale Price</option>
-          </select>
-        </div>
         <button class="btn btn-success" id="printAllBarcodes">
           Print All Barcodes
         </button>
@@ -37,22 +26,6 @@
       </select>
     </div>
 
-    <!-- Category totals -->
-    <div class="row mb-3">
-      <div class="col-md-6">
-        <div class="alert alert-info">
-          <strong>Category total (Cost):</strong>
-          <span id="category-total-cost">0</span>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="alert alert-success">
-          <strong>Category total (Sale):</strong>
-          <span id="category-total-sale">0</span>
-        </div>
-      </div>
-    </div>
-
     <div class="row">
       <div class="col-12">
         <div class="card">
@@ -65,26 +38,21 @@
                 class="table table-bordered table-striped table-hover w-100"
                 id="example1"
               >
-                <thead class="bg-primary">
+                <thead class="thead-dark">
                   <tr>
                     <th>Product Name</th>
-                    <th style="width: 50px">Size</th>
-                    <th style="width: 30px">Package</th>
+                    <th>Size</th>
+                    <th>Package Type</th>
                     <th>Cost Price</th>
                     <th>Sale Price</th>
                     <th>Barcode</th>
-                    <th style="width: 30px">Stock</th>
-                    <th>Subtotal</th>
-                    <th style="width: 400px">Action</th>
+                    <th>Stock</th>
+                    <th style="width: 200px">Action</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
               </table>
             </div>
-            <small class="text-muted">
-              Note: Subtotal = price × stock. Toggle between cost & sale mode
-              above.
-            </small>
           </div>
         </div>
       </div>
@@ -104,34 +72,23 @@
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><strong>Update Product Price</strong></h5>
+        <h5 class="modal-title" id="editPriceModalLabel">
+          Update Product Price
+        </h5>
         <button type="button" class="close" data-dismiss="modal">
-          <span>&times;</span>
+          <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="edit-product-id" />
         <div class="form-group">
           <label>Cost Price</label>
-          <input
-            type="number"
-            id="edit-cost-price"
-            class="form-control"
-            min="0"
-            step="0.01"
-          />
+          <input type="number" id="edit-cost-price" class="form-control" />
         </div>
         <div class="form-group">
           <label>Sale Price</label>
-          <input
-            type="number"
-            id="edit-sale-price"
-            class="form-control"
-            min="0"
-            step="0.01"
-          />
+          <input type="number" id="edit-sale-price" class="form-control" />
         </div>
-        <div id="edit-price-error" class="alert alert-danger d-none"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-success" id="save-price">Save</button>
@@ -151,6 +108,7 @@
       <svg id="barcodeDisplay"></svg>
       <div id="barcodeLabel" class="mt-2 small"></div>
       <div class="mt-3">
+        <!-- keep inline handler; function is exposed globally below -->
         <button type="button" class="btn btn-primary" onclick="printBarcode()">
           Print
         </button>
@@ -171,21 +129,6 @@
 
 <script>
   let table;
-  let subtotalMode = "cost"; // cost or sale
-  const nf = (n) =>
-    (parseFloat(n) || 0).toLocaleString("en-US", { minimumFractionDigits: 2 });
-
-  function recalcCategoryTotals(rowsData) {
-    let totalCost = 0,
-      totalSale = 0;
-    rowsData.forEach((r) => {
-      const qty = parseFloat(r.stock_qty) || 0;
-      totalCost += (parseFloat(r.cost_price) || 0) * qty;
-      totalSale += (parseFloat(r.sale_price) || 0) * qty;
-    });
-    document.getElementById("category-total-cost").textContent = nf(totalCost);
-    document.getElementById("category-total-sale").textContent = nf(totalSale);
-  }
 
   document.addEventListener("DOMContentLoaded", function () {
     table = $("#example1").DataTable({
@@ -196,127 +139,52 @@
         data: function (d) {
           d.category_id = $("#category-select").val();
         },
-        dataSrc: (json) => {
-          const rows = Array.isArray(json)
-            ? json
-            : json && Array.isArray(json.data)
-            ? json.data
-            : [];
-          recalcCategoryTotals(rows);
-          return rows;
-        },
       },
-
       columns: [
         { data: "name" },
         { data: "package_size" },
         { data: "unit_label" },
-        { data: "cost_price", render: (d) => nf(d), className: "text-right" },
-        { data: "sale_price", render: (d) => nf(d), className: "text-right" },
+        { data: "cost_price" },
+        { data: "sale_price" },
         { data: "barcode" },
-        { data: "stock_qty", className: "text-right" },
+        { data: "stock_qty" },
         {
           data: null,
-          render: (data, type, row) => {
-            const qty = parseFloat(row.stock_qty) || 0;
-            if (subtotalMode === "sale") {
-              return nf((parseFloat(row.sale_price) || 0) * qty);
-            } else {
-              return nf((parseFloat(row.cost_price) || 0) * qty);
-            }
+          render: function (data, type, row) {
+            return `
+              <button class="btn btn-sm btn-primary edit-price"
+                      data-id="${row.id}" data-cost="${row.cost_price}" data-sale="${row.sale_price}">
+                Edit
+              </button>
+              <button class="btn btn-sm btn-danger delete-product" data-id="${row.id}">
+                Delete
+              </button>
+              <button class="btn btn-sm btn-info view-barcode"
+                      data-name="${row.name}" data-size="${row.package_size}" data-unit="${row.unit_label}" data-barcode="${row.barcode}">
+                View Barcode
+              </button>`;
           },
-          className: "text-right",
-        },
-        {
-          data: null,
-          render: (row) => `
-      <button class="btn btn-sm btn-primary edit-price"
-        data-id="${row.id}" data-cost="${row.cost_price}" data-sale="${
-            row.sale_price
-          }">Edit</button>
-      <button class="btn btn-sm btn-danger delete-product" data-id="${
-        row.id
-      }">Delete</button>
-      <button class="btn btn-sm btn-info view-barcode"
-        data-name="${escapeHtml(row.name)}"
-        data-size="${escapeHtml(row.package_size)}"
-        data-unit="${escapeHtml(row.unit_label)}"
-        data-barcode="${escapeHtml(row.barcode)}">Barcode</button>`,
-          className: "text-center",
         },
       ],
-
-      dom: "Bflrtip",
-
-      buttons: [
-        {
-          extend: "copy",
-          text: '<i class="fas fa-copy"></i> Copy',
-          className: "bg-primary",
-          title: "Product Report",
-          exportOptions: { columns: ":visible" },
-        },
-        {
-          extend: "excel",
-          text: '<i class="fas fa-file-excel"></i>Excel',
-          className: "bg-success",
-          title: "Product Report",
-          exportOptions: { columns: ":visible" },
-        },
-        {
-          extend: "pdf",
-          className: "bg-danger",
-          text: '<i class="fas fa-file-pdf"></i> PDF Report',
-          title: "Product Report - KhaingMar", // PDF Title
-          exportOptions: { columns: ":visible" },
-        },
-        {
-          extend: "print",
-          className: "bg-info",
-          text: '<i class="fas fa-print"></i> Print',
-          title: "Product Report - KhaingMar", // Print Header Title
-          customize: function (win) {
-            // Optional: style print preview
-            $(win.document.body)
-              .css("font-size", "16pt")
-              .prepend(
-                '<h3 style="text-align:center; color:#007bff;">Shop Product Report</h3>'
-              );
-          },
-          exportOptions: { columns: ":visible" },
-        },
-        {
-          extend: "colvis",
-          className: "bg-indigo",
-          text: '<i class="fas fa-columns"></i> Columns',
-          title: "Product Report",
-        },
-      ],
-
+      dom: "Bfrtip",
+      buttons: ["copy", "excel", "pdf", "print", "colvis"],
       pageLength: 10,
-      drawCallback: function () {
-        const rows = this.api().rows({ search: "applied" }).data().toArray();
-        recalcCategoryTotals(rows);
-      },
     });
 
     $("#category-select").on("change", () => table.ajax.reload());
-    $("#subtotal-toggle").on("change", function () {
-      subtotalMode = this.value;
-      console.log("Changed subtotal mode:", subtotalMode);
-      table.rows().invalidate().draw(false); // force re-render
-    });
 
-    // View Barcode
+    // View Barcode modal
     $("#example1").on("click", ".view-barcode", function () {
       const code = $(this).data("barcode");
       const name = $(this).data("name");
       const size = $(this).data("size");
       const unit = $(this).data("unit");
+
       if (!code) {
         Swal.fire("No barcode", "This item has no barcode value.", "info");
         return;
       }
+
       JsBarcode("#barcodeDisplay", code, {
         format: "CODE128",
         width: 2,
@@ -327,25 +195,20 @@
       $("#barcodeModal").modal("show");
     });
 
-    // Edit price
+    // Edit
     $("#example1").on("click", ".edit-price", function () {
       $("#edit-product-id").val($(this).data("id"));
       $("#edit-cost-price").val($(this).data("cost"));
       $("#edit-sale-price").val($(this).data("sale"));
-      $("#edit-price-error").addClass("d-none").text("");
       $("#editPriceModal").modal("show");
     });
 
+    // Save updated price
     $("#save-price").on("click", function () {
       const id = $("#edit-product-id").val();
-      const cost = parseFloat($("#edit-cost-price").val()) || 0;
-      const sale = parseFloat($("#edit-sale-price").val()) || 0;
-      if (sale <= cost) {
-        $("#edit-price-error")
-          .removeClass("d-none")
-          .text("Sale price must be greater than Cost price.");
-        return;
-      }
+      const cost = $("#edit-cost-price").val();
+      const sale = $("#edit-sale-price").val();
+
       fetch(`/products/update-price/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -354,35 +217,27 @@
         .then((r) => r.json())
         .then((data) => {
           if (data.success) {
-            $("#editPriceModal").modal("hide");
             table.ajax.reload(null, false);
+            $("#editPriceModal").modal("hide");
             Swal.fire({
               icon: "success",
-              title: "Updated",
+              title: "Updated!",
               text: "Price updated successfully",
-              timer: 1500,
+              timer: 2000,
               showConfirmButton: false,
             });
           } else {
-            $("#edit-price-error")
-              .removeClass("d-none")
-              .text("Failed to update price.");
+            Swal.fire("Error", "Failed to update price.", "error");
           }
-        })
-        .catch((err) => {
-          console.error(err);
-          $("#edit-price-error")
-            .removeClass("d-none")
-            .text("Server error while updating price.");
         });
     });
 
-    // Delete product
+    // Delete
     $("#example1").on("click", ".delete-product", function () {
       const id = $(this).data("id");
       Swal.fire({
-        title: "Delete product size row?",
-        text: "This will remove only the selected size/pack row — product master remains.",
+        title: "Delete product?",
+        text: "This cannot be undone.",
         icon: "warning",
         showCancelButton: true,
         confirmButtonText: "Yes, delete it!",
@@ -397,7 +252,7 @@
               Swal.fire({
                 icon: "success",
                 title: "Deleted",
-                timer: 1200,
+                timer: 1500,
                 showConfirmButton: false,
               });
             } else {
@@ -407,20 +262,23 @@
       });
     });
 
-    // Print all
+    // Print all visible barcodes
     $("#printAllBarcodes").on("click", function () {
-      const data = table.rows({ search: "applied" }).data().toArray();
+      const data = table.rows({ search: "applied" }).data();
       const work = document.getElementById("printArea");
       work.innerHTML = "";
-      data.forEach((prod, i) => {
+
+      for (let i = 0; i < data.length; i++) {
+        const prod = data[i];
         const holder = document.createElement("div");
         holder.className = "label";
-        holder.innerHTML = `<div class="label-inner"><svg id="pbc${i}"></svg><div class="label-text">${escapeHtml(
-          prod.name
-        )} - ${escapeHtml(prod.package_size)} ${escapeHtml(
-          prod.unit_label
-        )}</div></div>`;
+        holder.innerHTML = `
+          <div class="label-inner">
+            <svg id="pbc${i}"></svg>
+            <div class="label-text">${prod.name} - ${prod.package_size} ${prod.unit_label}</div>
+          </div>`;
         work.appendChild(holder);
+
         if (prod.barcode) {
           JsBarcode(`#pbc${i}`, prod.barcode, {
             format: "CODE128",
@@ -433,30 +291,38 @@
             .querySelector(".label-text")
             .insertAdjacentHTML("afterbegin", "<div>(no barcode)</div>");
         }
-      });
+      }
+
       const w = window.open("", "", "width=800,height=900");
-      w.document.write(
-        `<html><head><title>Print Barcodes</title><style>@page{margin:6mm;}body{font-family:Arial;} .sheet{display:flex;flex-wrap:wrap;} .label{width:60mm;margin:4mm;text-align:center;} .label .label-text{font-size:18px;margin-top:4px;} svg{max-width:100%;}</style></head><body><div class="sheet">${work.innerHTML}</div></body></html>`
-      );
+      w.document.write(`
+        <html>
+          <head>
+            <title>Print Barcodes</title>
+            <style>
+              @page { margin: 6mm; }
+              body { font-family: Arial, sans-serif; }
+              .sheet { display: flex; flex-wrap: wrap; }
+              .label { width: 60mm; margin: 4mm; text-align: center; }
+              .label .label-text { font-size: 18px; margin-top: 4px; }
+              svg { max-width: 100%; }
+            </style>
+          </head>
+          <body>
+            <div class="sheet">${work.innerHTML}</div>
+          </body>
+        </html>
+      `);
       w.document.close();
       w.focus();
-      w.onload = () => {
+      w.onload = function () {
         w.print();
-        w.onafterprint = () => w.close();
+        window.onafterprint = function () {
+          window.close();
+        };
       };
     });
   });
-
-  function escapeHtml(str) {
-    if (str == null) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-
+  
   function printBarcode() {
     // get barcode and label
     const barcodeSVG = document.getElementById("barcodeDisplay").outerHTML;
@@ -488,6 +354,7 @@
   `);
     printWindow.document.close();
   }
+
 </script>
 
 <%- include('datafoot.ejs') %>

@@ -12,11 +12,39 @@ SaleItem.init(
       autoIncrement: true,
       primaryKey: true,
     },
-    sale_id: { type: DataTypes.INTEGER, allowNull: false },
-    size_id: { type: DataTypes.INTEGER, allowNull: false },
-    quantity: { type: DataTypes.INTEGER, allowNull: false },
-    unit_price: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
-    subtotal: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+    sale_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Sale,
+        key: "sale_id",
+      },
+    },
+    size_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: ProductSize,
+        key: "size_id",
+      },
+    },
+    quantity: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    unit_price: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+    discount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0.0,
+    },
+    subtotal: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
   },
   {
     sequelize,

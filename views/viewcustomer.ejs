@@ -1,0 +1,278 @@
+<%- include('datahead.ejs') %>
+<link rel="stylesheet" href="custom/shadow.css" />
+
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6"><h1>Customer List</h1></div>
+      <div class="col-sm-6 text-right">
+        <a href="/sales" class="btn btn-info">Sales</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <!-- 🔹 Date Range Filter -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-3">
+            <label>From Date</label>
+            <input type="date" id="fromDate" class="form-control" />
+          </div>
+          <div class="col-md-3">
+            <label>To Date</label>
+            <input type="date" id="toDate" class="form-control" />
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button id="filterBtn" class="btn btn-info w-100">
+              <i class="fas fa-filter"></i> Apply Filter
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🔹 Customer Table -->
+    <div class="card shadow-info">
+      <div class="card-header bg-info text-white">
+        <h5 class="card-title mb-0">Customer</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table
+            class="table table-bordered table-striped table-hover w-100"
+            id="customerTable"
+          >
+            <thead class="bg-info text-white">
+              <tr>
+                <th>Customer</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Total Sales</th>
+                <th>Total Paid</th>
+                <th>Total Remaining</th>
+                <th style="width: 80px">Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 🔹 Edit Customer Modal -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="editCustomerForm" method="POST">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">Edit Customer</h5>
+          <button type="button" class="close" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="customerId" name="customer_id" />
+          <div class="form-group">
+            <label for="customerPhone">Phone</label>
+            <input
+              type="text"
+              class="form-control"
+              id="customerPhone"
+              name="phone"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="customerAddress">Address</label>
+            <textarea
+              class="form-control"
+              id="customerAddress"
+              name="address"
+              required
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Save</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const fmt = (n) =>
+      (parseFloat(n) || 0).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+      });
+
+    // 🔹 Initialize DataTable
+    const table = $("#customerTable").DataTable({
+      ajax: {
+        url: "/sales/customer-summary",
+        data: function (d) {
+          d.fromDate = $("#fromDate").val();
+          d.toDate = $("#toDate").val();
+        },
+        dataSrc: "",
+      },
+      columns: [
+        { data: "customer_name" },
+        { data: "customer_phone" },
+        { data: "customer_address" },
+        {
+          data: "total_amount",
+          render: (d) => fmt(d),
+          className: "text-right",
+        },
+        {
+          data: "total_paid",
+          render: (d) => fmt(d),
+          className: "text-right",
+        },
+        {
+          data: "total_remaining",
+          render: (d) => fmt(d),
+          className: "text-right",
+        },
+        {
+          data: "customer_id",
+          render: (id, type, row) =>
+            `<button class="btn btn-sm btn-primary edit-btn" data-id="${id}" data-phone="${row.customer_phone}" data-address="${row.customer_address}">
+              <i class="fas fa-edit"></i>
+            </button>`,
+          className: "text-center",
+        },
+      ],
+      dom: "Bflrtip",
+
+      buttons: [
+        {
+          extend: "copy",
+          text: '<i class="fas fa-copy"></i> Copy',
+          title: "Customer Report",
+          className: "bg-primary",
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "excel",
+          text: '<i class="fas fa-file-excel"></i> Excel',
+          title: "Customer Report",
+          className: "bg-success",
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "pdf",
+          className: "bg-danger",
+          text: '<i class="fas fa-file-pdf"></i> PDF',
+          title: "Customer Report",
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "print",
+          className: "bg-info",
+          exportOptions: { columns: ":visible" },
+          text: '<i class="fas fa-print"></i> Print',
+          title: "Customer Report",
+          customize(win) {
+            $(win.document.body)
+              .css("font-size", "12pt")
+              .prepend(
+                '<h3 style="text-align:center; color:#007bff;">Customer Report</h3>'
+              );
+          },
+        },
+        {
+          extend: "colvis",
+          className: "bg-indigo",
+          text: '<i class="fas fa-columns"></i> Columns',
+        },
+      ],
+      language: {
+        emptyTable:
+          "<div style='color:black; font-weight:bold;'><h1>📭 </h1>Customer Not Found, Filter by Another Date Range</div>",
+      },
+      pageLength: 10,
+    });
+
+    // 🔹 Date Validation
+    $("#fromDate").on("change", function () {
+      const from = $(this).val();
+      $("#toDate").attr("min", from);
+      if ($("#toDate").val() && $("#toDate").val() < from) {
+        $("#toDate").val("");
+      }
+    });
+
+    // 🔹 Filter Button Reload
+    $("#filterBtn").on("click", () => {
+      table.ajax.reload();
+    });
+
+    // 🔹 Open Edit Modal
+    $("#customerTable").on("click", ".edit-btn", function () {
+      $("#customerId").val($(this).data("id"));
+      $("#customerPhone").val($(this).data("phone"));
+      $("#customerAddress").val($(this).data("address"));
+      $("#editCustomerModal").modal("show");
+    });
+
+    // 🔹 Submit Edit Form with SweetAlert2
+    $("#editCustomerForm").on("submit", function (e) {
+      e.preventDefault();
+      const id = $("#customerId").val();
+      const phone = $("#customerPhone").val().trim();
+      const address = $("#customerAddress").val().trim();
+
+      if (!/^[0-9]{9,11}$/.test(phone)) {
+        Swal.fire(
+          "Validation Error",
+          "Phone must be 9–11 digits only.",
+          "warning"
+        );
+        return;
+      }
+      if (!address) {
+        Swal.fire("Validation Error", "Address is required.", "warning");
+        return;
+      }
+
+      $.ajax({
+        url: `/customers/update/${id}`,
+        method: "POST",
+        data: { phone, address },
+        success: function (res) {
+          if (res.success) {
+            $("#editCustomerModal").modal("hide");
+            table.ajax.reload();
+            Swal.fire("Success", "Customer updated successfully!", "success");
+          } else {
+            Swal.fire(
+              "Error",
+              res.message || "Error updating customer.",
+              "error"
+            );
+          }
+        },
+        error: function () {
+          Swal.fire("Server Error", "Something went wrong on server.", "error");
+        },
+      });
+    });
+  });
+</script>
+
+<%- include('datafoot.ejs') %>

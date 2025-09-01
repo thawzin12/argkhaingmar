@@ -14,6 +14,7 @@ const { isValidSpaceName } = require("../../utils/validation");
 router.get("/createcategory", (req, res) => {
   res.render("createcategory", {
     title: "Create Category",
+    activePage: "category-create",
   });
 });
 
@@ -31,7 +32,7 @@ router.post("/createcategory", async (req, res) => {
       return res.redirect("/createcategory");
     }
 
-    if (!isValidSpaceName.test(name)) {
+    if (isValidSpaceName(name)) {
       req.flash(
         "error_msg",
         "Category name can contain only letters and spaces!"
@@ -57,84 +58,6 @@ router.post("/createcategory", async (req, res) => {
   }
 });
 
-// GET: show size creation form
-router.get("/createsize", (req, res) => {
-  res.render("createsize", { title: "Create Size" });
-});
-
-// POST: handle size creation
-router.post("/createsize", async (req, res) => {
-  try {
-    const { size_label } = req.body;
-    const name = size_label ? size_label.trim() : "";
-
-    if (!name) {
-      req.flash("error_msg", "Size cannot be blank!");
-      return res.redirect("/createsize");
-    }
-
-    // Optional: letters, numbers, spaces only
-    if (!isValidSpaceName(name)) {
-      req.flash(
-        "error_msg",
-        "Size can contain only letters, numbers, and spaces!"
-      );
-      return res.redirect("/createsize");
-    }
-
-    // Check if size already exists
-    const exist = await Size.findOne({ where: { size_label: name } });
-    if (exist) {
-      req.flash("error_msg", "Size already exists!");
-      return res.redirect("/createsize");
-    }
-
-    await Size.create({ size_label: name });
-    req.flash("success_msg", `Size "${name}" created successfully!`);
-    res.redirect("/createsize");
-  } catch (err) {
-    console.error(err);
-    req.flash("error_msg", err.message || "Something went wrong!");
-    res.redirect("/createsize");
-  }
-});
-
-// GET: show unit creation form
-router.get("/createunit", (req, res) => {
-  res.render("createunit", { title: "Create Unit" });
-});
-// POST: handle unit creation
-router.post("/createunit", async (req, res) => {
-  try {
-    const { unit_label } = req.body;
-    const name = unit_label ? unit_label.trim() : "";
-
-    if (!name) {
-      req.flash("error_msg", "Unit cannot be blank!");
-      return res.redirect("/createunit");
-    }
-
-    // Optional: letters and spaces only
-    if (isValidSpaceName(name)) {
-      req.flash("error_msg", "Unit can contain only letters and spaces!");
-      return res.redirect("/createunit");
-    }
-
-    const exist = await Unit.findOne({ where: { unit_label: name } });
-    if (exist) {
-      req.flash("error_msg", "Unit already exists!");
-      return res.redirect("/createunit");
-    }
-
-    await Unit.create({ unit_label: name });
-    req.flash("success_msg", `Unit "${name}" created successfully!`);
-    res.redirect("/createunit");
-  } catch (err) {
-    console.error(err);
-    req.flash("error_msg", err.message || "Something went wrong!");
-    res.redirect("/createunit");
-  }
-});
 // ================= GET =================
 router.get("/createproduct", async (req, res) => {
   try {
@@ -143,6 +66,7 @@ router.get("/createproduct", async (req, res) => {
     const units = await Unit.findAll({ order: [["unit_label", "ASC"]] });
 
     res.render("createproduct", {
+      activePage: "product-create",
       title: "Create Product",
       categories,
       sizes,

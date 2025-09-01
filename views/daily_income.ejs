@@ -1,0 +1,167 @@
+<%- include('datahead.ejs') %>
+<link rel="stylesheet" href="custom/shadow.css" />
+
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6"><h1>Daily Income Report</h1></div>
+      <div class="col-sm-6 text-right">
+        <input
+          type="date"
+          id="report-date"
+          class="form-control d-inline w-auto"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content">
+  <div class="container-fluid">
+    <!-- Summary -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <div class="alert alert-info">
+          <strong>Total Income:</strong> <span id="total-income">0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card shadow-blue">
+      <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0">Daily Income Details</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table
+            class="table table-bordered table-striped table-hover w-100"
+            id="dailyIncomeTable"
+          >
+            <thead class="bg-primary">
+              <tr>
+                <th>Payment Date</th>
+                <th>Voucher #</th>
+                <th>Customer</th>
+                <th>Address</th>
+                <th>Phone</th>
+                <th>Income</th>
+                <th>Sale Date</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // default date = today
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const defaultDate = `${yyyy}-${mm}-${dd}`;
+    const dateInput = document.getElementById("report-date");
+    if (!dateInput.value) dateInput.value = defaultDate;
+
+    const totalIncome = document.getElementById("total-income");
+
+    const table = $("#dailyIncomeTable").DataTable({
+      ajax: {
+        url: "/reports/daily/ajax",
+        data: function (d) {
+          d.date = $("#report-date").val();
+        },
+        dataSrc: function (json) {
+          let income = 0;
+          json.forEach((r) => {
+            income += parseFloat(r.income || 0);
+          });
+          totalIncome.textContent = income.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          });
+          return json;
+        },
+        error: function () {
+          // Prevent DataTables default alert; show a nicer hint
+          console.error("Failed to load daily income.");
+        },
+      },
+      columns: [
+        { data: "payment_date" },
+        { data: "invoice_number" },
+        { data: "customer_name" },
+        { data: "address" },
+        { data: "phone" },
+        {
+          data: "income",
+          render: (d) =>
+            parseFloat(d || 0).toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+            }),
+          className: "text-right",
+        },
+        { data: "sale_date" },
+      ],
+      order: [[4, "desc"]],
+      dom: "Bflrtip",
+      buttons: [
+        {
+          extend: "copy",
+          text: '<i class="fas fa-copy"></i> Copy',
+          title: "Daily Income Report",
+          className: "bg-primary",
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "excel",
+          text: '<i class="fas fa-file-excel"></i> Excel',
+          title: "Daily Income Report",
+          className: "bg-success",
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "pdf",
+          text: '<i class="fas fa-file-pdf"></i> PDF',
+          className: "bg-danger",
+          title: "Daily Income Report",
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "print",
+          text: '<i class="fas fa-print"></i> Print',
+          className: "bg-info",
+          title: "Daily Income Report",
+          customize(win) {
+            $(win.document.body)
+              .css("font-size", "16pt")
+              .prepend(
+                '<h3 style="text-align:center; color:#007bff;">Daily Income</h3>'
+              );
+          },
+          exportOptions: { columns: ":visible" },
+        },
+        {
+          extend: "colvis",
+          className: "bg-indigo",
+          text: '<i class="fas fa-columns"></i> Columns',
+          title: "Daily Income Report",
+        },
+      ],
+      language: {
+        emptyTable:
+          "<div style='color:black; font-weight:bold;'><h4>📭 No payments</h4>Try another date.</div>",
+      },
+      pageLength: 10,
+      deferLoading: 0,
+    });
+
+    $("#report-date").on("change", () => table.ajax.reload());
+  });
+</script>
+
+<%- include('datafoot.ejs') %>

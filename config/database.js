@@ -1,5 +1,10 @@
 const { Sequelize } = require("sequelize");
-require("dotenv").config();
+const dotenvFlow = require("dotenv-flow");
+
+// Load correct .env based on NODE_ENV
+dotenvFlow.config();
+
+const isProduction = process.env.NODE_ENV === "production";
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,
@@ -9,11 +14,14 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || "localhost",
     dialect: "mysql",
     logging: false,
+    dialectOptions: isProduction
+      ? {} // No SSL for InfinityFree
+      : {},
     pool: {
-      max: 10, // max connections
-      min: 0, // minimum connections
-      acquire: 60000, // wait max 30s before throwing error
-      idle: 20000, // release idle connections after 10s
+      max: 10,
+      min: 0,
+      acquire: 60000,
+      idle: 20000,
     },
   }
 );

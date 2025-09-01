@@ -62,9 +62,19 @@
     padding: 0.15rem 0.35rem !important;
     height: 32px;
   }
+  .disc-input {
+    width: 90px !important;
+    text-align: right;
+    padding: 0.15rem 0.35rem !important;
+    height: 32px;
+  }
+  .muted-note {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
 </style>
 
-<div class="container mt-4 p-5" id="voucherPage">
+<div class="container mt-4 p-5 bg-info-subtle" id="voucherPage">
   <h2>Sale Voucher</h2>
 
   <form id="saleForm">
@@ -92,10 +102,6 @@
             placeholder="Type customer name"
             required
           />
-          <div class="form-text">
-            Type freely. Use “Pick Customer” to search & select (contains
-            match). Navigate picker with <b>↑/↓</b>, choose with <b>Enter</b>.
-          </div>
         </div>
 
         <div class="mb-3">
@@ -118,9 +124,6 @@
             class="form-control"
             placeholder="Enter/select phone"
           />
-          <div class="form-text">
-            Customers are unique by <b>Name + Address + Phone</b>.
-          </div>
         </div>
       </div>
     </div>
@@ -189,7 +192,7 @@
           <th style="width: 280px">Qty</th>
           <th>Remaining Stock</th>
           <th>Unit Price</th>
-          <th>Discount</th>   <!-- NEW -->
+          <th>Discount</th>
           <th>Subtotal</th>
           <th>Action</th>
         </tr>
@@ -197,19 +200,17 @@
       <tbody></tbody>
       <tfoot>
         <tr>
-          <td colspan="6" class="text-end">Total:</td>
+          <td colspan="7" class="text-end">
+            Items Total (after per product discounts):
+          </td>
           <td id="totalAmount">0.00</td>
           <td></td>
         </tr>
         <tr>
-          <td colspan="6" class="text-end">
+          <td colspan="7" class="text-end">
             <div class="d-flex justify-content-end align-items-center gap-2">
-              <span>Discount:</span>
-              <select
-                id="discountType"
-                class="form-select form-select-sm"
-                style="width: auto"
-              >
+              <span>Overall Discount:</span>
+              <select id="discountType" class="form-select" style="width: auto">
                 <option value="amount" selected>Amount</option>
                 <option value="percent">% Percent</option>
               </select>
@@ -229,8 +230,8 @@
           <td></td>
         </tr>
         <tr>
-          <td colspan="6" class="text-end fw-bold">
-            Grand Total (After Discount):
+          <td colspan="7" class="text-end fw-bold">
+            Grand Total (After All Discounts):
           </td>
           <td id="grandTotal" class="fw-bold">0.00</td>
           <td></td>
@@ -296,30 +297,38 @@
         <th>Unit</th>
         <th>Qty</th>
         <th>Unit Price</th>
-         <th>Discount</th> <!-- NEW -->
+        <th>Discount</th>
         <th>Subtotal</th>
       </tr>
     </thead>
     <tbody id="pItems"></tbody>
     <tfoot>
       <tr>
-        <td colspan="5" align="right"><b>Total</b></td>
+        <td colspan="6" align="right"><b>Total Before Any Discount</b></td>
+        <td id="pGross"></td>
+      </tr>
+      <tr>
+        <td colspan="6" align="right"><b>Line Discounts</b></td>
+        <td id="pLineDiscounts"></td>
+      </tr>
+      <tr>
+        <td colspan="6" align="right"><b>Subtotal After Line Discounts</b></td>
         <td id="pTotal"></td>
       </tr>
       <tr>
-        <td colspan="5" align="right"><b>Discount</b></td>
+        <td colspan="6" align="right"><b>Overall Discount</b></td>
         <td id="pDiscount"></td>
       </tr>
       <tr>
-        <td colspan="5" align="right"><b>Grand Total</b></td>
+        <td colspan="6" align="right"><b>Grand Total</b></td>
         <td id="pGrand"></td>
       </tr>
       <tr>
-        <td colspan="5" align="right"><b>Paid</b></td>
+        <td colspan="6" align="right"><b>Paid</b></td>
         <td id="pPaid"></td>
       </tr>
       <tr>
-        <td colspan="5" align="right"><b>Balance</b></td>
+        <td colspan="6" align="right"><b>Balance</b></td>
         <td id="pBalance"></td>
       </tr>
     </tfoot>

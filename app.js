@@ -1,4 +1,5 @@
 const express = require("express");
+// const open = require("open");
 const app = express();
 require("dotenv").config();
 const path = require("path");
@@ -36,12 +37,24 @@ app.set("views", [path.join(__dirname, "views")]);
 
 const adminRoute = require("./routes/auth");
 const categoryRoute = require("./routes/category/category");
+const viewCategoryRoute = require("./routes/category/viewcategory");
 const productRoute = require("./routes/product/product");
 const purchaseRoute = require("./routes/purchase/purchase");
 const saleRoute = require("./routes/sale/sale");
+const saleRoutes = require("./routes/sale/sales");
+const incomeRoute = require("./routes/sale/income");
+const unitRoute = require("./routes/unit/unit");
+const sizeRoute = require("./routes/size/size");
+const supplierRoute = require("./routes/supplier/supplier");
 
 app.use("/", categoryRoute);
+app.use("/", viewCategoryRoute);
+app.use("/", supplierRoute);
+app.use("/", sizeRoute);
+app.use("/", unitRoute);
 app.use("/", saleRoute);
+app.use("/", saleRoutes);
+app.use("/", incomeRoute);
 app.use("/", purchaseRoute);
 app.use("/", adminRoute);
 app.use("/", productRoute);

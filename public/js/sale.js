@@ -185,7 +185,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ---------------------------
-  // Sale item handling (with icon controls)
+  // Helpers for currency math
+  // ---------------------------
+  const to2 = (n) => Number(n || 0).toFixed(2);
+  const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
+
+  // ---------------------------
+  // Sale item handling (with icon controls) + per-item discount
   // ---------------------------
   function addItem(p, qty = 1) {
     const exist = saleItems.find((i) => i.size_id === p.size_id);
@@ -198,30 +204,54 @@ document.addEventListener("DOMContentLoaded", () => {
         unit_label: p.Unit.unit_label,
         quantity: qty,
         unit_price: parseFloat(p.sale_price) || 0,
-        discount: 0, // NEW
+        discount: 0, // per-item discount (amount)
       });
     renderTable();
   }
 
   function computeTotals() {
-    const total = saleItems.reduce(
-      (s, i) => s + Number(i.unit_price) * Number(i.quantity),
-      0
-    );
+    // Calculate line totals and apply per-item discount (capped)
+    let gross = 0; // sum(qty*unit_price)
+    let lineDiscounts = 0; // sum(per-item discount)
+    let netAfterLines = 0; // sum(line net)
+
+    saleItems.forEach((i) => {
+      const lineTotal = Number(i.unit_price) * Number(i.quantity);
+      let d = Number(i.discount) || 0;
+      if (d < 0) d = 0;
+      if (d > lineTotal) d = lineTotal;
+      i.discount = d; // keep it sanitized in state
+      const lineNet = lineTotal - d;
+
+      i.subtotal = lineNet; // store net per line
+      gross += lineTotal;
+      lineDiscounts += d;
+      netAfterLines += lineNet;
+    });
+
+    // Overall discount on the subtotal after line discounts
     const type = discountTypeEl.value;
     let val = parseFloat(discountValueEl.value) || 0;
-    let dAmt = 0;
+    if (val < 0) val = 0;
+
+    let overallDiscount = 0;
     if (type === "percent") {
-      if (val < 0) val = 0;
       if (val > 100) val = 100;
-      dAmt = total * (val / 100);
+      overallDiscount = netAfterLines * (val / 100);
     } else {
-      if (val < 0) val = 0;
-      dAmt = val;
+      overallDiscount = val;
     }
-    if (dAmt > total) dAmt = total;
-    const grand = total - dAmt;
-    return { total, discountAmount: dAmt, grand };
+    if (overallDiscount > netAfterLines) overallDiscount = netAfterLines;
+
+    const grand = netAfterLines - overallDiscount;
+
+    return {
+      gross, // before any discounts
+      lineDiscounts,
+      netAfterLines,
+      overallDiscount,
+      grand,
+    };
   }
 
   function renderTable() {
@@ -233,7 +263,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const stock =
         products.find((p) => p.size_id === i.size_id)?.stock_qty || 0;
       const remain = stock - i.quantity;
-      i.subtotal = i.quantity * i.unit_price;
+      const lineTotal = Number(i.unit_price) * Number(i.quantity);
+      const sanitizedDiscount = clamp(Number(i.discount) || 0, 0, lineTotal);
+      i.discount = sanitizedDiscount;
+      i.subtotal = lineTotal - sanitizedDiscount;
+
       const border = remain < 0 ? "border:2px solid red" : "";
       if (remain < 0)
         insufficient.push(
@@ -267,8 +301,13 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
           </td>
           <td>${remain >= 0 ? remain : 0}</td>
-          <td>${Number(i.unit_price).toFixed(2)}</td>
-          <td>${i.subtotal.toFixed(2)}</td>
+          <td>${to2(i.unit_price)}</td>
+          <td>
+            <input type="number" min="0" step="0.01" class="form-control disc-input item-discount" data-idx="${idx}" value="${
+          i.discount
+        }" title="Discount amount for this line (auto-capped)">
+          </td>
+          <td>${to2(i.subtotal)}</td>
           <td>
             <button type="button" class="btn btn-danger btn-sm item-remove" data-idx="${idx}">
               <i class="bi bi-x-lg"></i>
@@ -280,18 +319,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const totals = computeTotals();
-    document.getElementById("totalAmount").innerText = totals.total.toFixed(2);
-    document.getElementById("discountAmount").innerText =
-      totals.discountAmount.toFixed(2);
-    document.getElementById("grandTotal").innerText = totals.grand.toFixed(2);
+    // Show "Items Total" as subtotal after line discounts
+    document.getElementById("totalAmount").innerText = to2(
+      totals.netAfterLines
+    );
+    document.getElementById("discountAmount").innerText = to2(
+      totals.overallDiscount
+    );
+    document.getElementById("grandTotal").innerText = to2(totals.grand);
 
     itemsInputEl.value = JSON.stringify(saleItems);
 
+    // Keep paid auto-filled unless user changed it away from previous auto
     if (
       !amountPaidEl.value ||
       parseFloat(amountPaidEl.value) === lastAutoTotal
     ) {
-      amountPaidEl.value = totals.grand.toFixed(2);
+      amountPaidEl.value = to2(totals.grand);
       lastAutoTotal = totals.grand;
     }
     updateBalance();
@@ -306,8 +350,20 @@ document.addEventListener("DOMContentLoaded", () => {
       };
     });
 
+    document.querySelectorAll(".item-discount").forEach((inp) => {
+      inp.oninput = (e) => {
+        const idx = Number(e.target.dataset.idx);
+        const val = Math.max(0, parseFloat(e.target.value) || 0);
+        // Cap to current line total
+        const lineTotal =
+          Number(saleItems[idx].unit_price) * Number(saleItems[idx].quantity);
+        saleItems[idx].discount = clamp(val, 0, lineTotal);
+        renderTable();
+      };
+    });
+
     document.querySelectorAll(".qty-step").forEach((btn) => {
-      btn.onclick = (e) => {
+      btn.onclick = () => {
         const idx = Number(btn.dataset.idx);
         const delta = Number(btn.dataset.delta);
         const current = saleItems[idx].quantity;
@@ -335,7 +391,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return insufficient;
   }
 
-  // Recalc on discount change
+  // Recalc on overall discount change
   discountTypeEl.addEventListener("change", renderTable);
   discountValueEl.addEventListener("input", renderTable);
 
@@ -344,10 +400,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let paid = parseFloat(amountPaidEl.value) || 0;
     if (paid > grand) {
       paid = grand;
-      amountPaidEl.value = grand.toFixed(2);
+      amountPaidEl.value = to2(grand);
       paidWarningEl.style.display = "block";
     } else paidWarningEl.style.display = "none";
-    balanceEl.value = (grand - paid).toFixed(2);
+    balanceEl.value = to2(grand - paid);
   }
   amountPaidEl.addEventListener("input", updateBalance);
 
@@ -526,7 +582,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const a = customerAddressEl.value.trim();
     const p = customerPhoneEl.value.trim();
     if (!n) return sweetError("Customer name is required.");
-    // Not strictly required, but we nudge: unique = name+address+phone
     if (!a || !p) {
       const { isConfirmed } = await Swal.fire({
         icon: "question",
@@ -538,7 +593,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!isConfirmed) return;
     }
 
-    // attach discount fields
+    // attach overall discount fields
     const dType = discountTypeEl.value;
     const dValue = parseFloat(discountValueEl.value) || 0;
     document.getElementById("discountTypeHidden").value = dType;
@@ -552,7 +607,7 @@ document.addEventListener("DOMContentLoaded", () => {
       paidAmount: amountPaidEl.value,
       discountType: dType,
       discountValue: dValue,
-      items: JSON.stringify(saleItems),
+      items: JSON.stringify(saleItems), // each item includes discount amount
     };
 
     try {
@@ -581,15 +636,23 @@ document.addEventListener("DOMContentLoaded", () => {
             <td>${i.unit_label}</td>
             <td>${i.quantity}</td>
             <td>${Number(i.unit_price).toFixed(2)}</td>
+            <td>${Number(i.discount || 0).toFixed(2)}</td>
             <td>${Number(i.subtotal).toFixed(2)}</td>
           </tr>`)
         );
 
+        // Fill totals / discounts
+        document.getElementById("pGross").innerText = Number(
+          data.items_gross_total || 0
+        ).toFixed(2);
+        document.getElementById("pLineDiscounts").innerText = Number(
+          data.items_discount_total || 0
+        ).toFixed(2);
         document.getElementById("pTotal").innerText = Number(
-          data.total_before_discount || 0
+          data.total_after_line_discounts || 0
         ).toFixed(2);
         document.getElementById("pDiscount").innerText = Number(
-          data.discount || 0
+          data.overall_discount || 0
         ).toFixed(2);
         document.getElementById("pGrand").innerText = Number(
           data.total_amount || 0

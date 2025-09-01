@@ -73,7 +73,7 @@
         </div>
       </div>
       <div class="col-md-4">
-        <div class="alert alert-warning">
+        <div class="alert alert-primary text-white">
           <strong>Total Remaining:</strong>
           <span id="summary-remaining">0</span>
         </div>
@@ -120,7 +120,7 @@
                 class="table table-bordered table-striped table-hover w-100"
                 id="purchaseTable"
               >
-                <thead class="thead-dark">
+                <thead class="bg-primary">
                   <tr>
                     <th>Invoice #</th>
                     <th>Supplier</th>
@@ -294,22 +294,26 @@
           data: "total_amount",
           render: (d) =>
             parseFloat(d).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+          className: "text-right",
         },
         {
           data: "total_paid",
           render: (d) =>
             parseFloat(d).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+          className: "text-right",
         },
         {
           data: "remaining",
           render: (d) =>
             parseFloat(d).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+          className: "text-right",
         },
         { data: "status" },
         {
           data: null,
           render: (row) =>
-            `<button class="btn btn-sm btn-info view-items" data-id="${row.purchase_id}">View Items</button>`,
+            `<button class="btn btn-sm btn-info view-items" data-id="${row.purchase_id}">View</button>`,
+          className: "text-center",
         },
         {
           data: null,
@@ -320,30 +324,33 @@
                 : "";
             return `${payBtn} <button class="btn btn-sm btn-danger delete-purchase" data-id="${row.purchase_id}">Delete</button>`;
           },
+          className: "text-right",
         },
       ],
 
       dom: "Bflrtip",
+
       buttons: [
         {
           extend: "copy",
           text: '<i class="fas fa-copy"></i> Copy',
           className: "bg-primary",
-
           title: "Purchase Report",
+          exportOptions: { columns: ":visible" },
         },
         {
           extend: "excel",
           text: '<i class="fas fa-file-excel"></i>Excel',
           className: "bg-success",
-
           title: "Purchase Report",
+          exportOptions: { columns: ":visible" },
         },
         {
           extend: "pdf",
           className: "bg-danger",
           text: '<i class="fas fa-file-pdf"></i> PDF Report',
           title: "Purchase Report - KhaingMar", // PDF Title
+          exportOptions: { columns: ":visible" },
         },
         {
           extend: "print",
@@ -353,11 +360,12 @@
           customize: function (win) {
             // Optional: style print preview
             $(win.document.body)
-              .css("font-size", "12pt")
+              .css("font-size", "16pt")
               .prepend(
                 '<h3 style="text-align:center; color:#007bff;">Shop Purchase Report</h3>'
               );
           },
+          exportOptions: { columns: ":visible" },
         },
         {
           extend: "colvis",
@@ -366,6 +374,7 @@
           title: "Purchase Report",
         },
       ],
+
       language: {
         emptyTable:
           "<div style='color:black; font-weight:bold;'><h1>📭 </h1>Try changing the date/month filter to see purchases.</div>",
