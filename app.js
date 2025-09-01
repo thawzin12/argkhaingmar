@@ -71,10 +71,11 @@ app.use("/", productRoute);
 app.use("/", require("./routes/dashboard"));
 
 app.use(express.json());
-app.listen(process.env.SERVER_PORT, () => {
-  console.log(`The server is listen at ${process.env.SERVER_PORT}`);
-});
+const PORT = process.env.PORT || process.env.SERVER_PORT || 4500;
 
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
 const password = "Thawzin@#12"; // the password you want
 const salt = bcrypt.genSaltSync(10);
 const hash = bcrypt.hashSync(password, salt);
