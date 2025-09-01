@@ -1,30 +1,40 @@
 const express = require("express");
-// const open = require("open");
 const app = express();
-require("dotenv").config();
+require("dotenv-flow").config();
 const path = require("path");
-const session = require("express-session");
 const bcrypt = require("bcryptjs");
 const flash = require("connect-flash");
+
+const SESSION_SECRET = process.env.SESSION_SECRET || "S3cr3t!@#";
+const session = require("express-session");
+const SequelizeStore = require("connect-session-sequelize")(session.Store);
+const sequelize = require("./config/database"); // your Sequelize instance
+
+const sessionStore = new SequelizeStore({
+  db: sequelize,
+});
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "secret",
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production", // HTTPS only
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      httpOnly: true,
+      sameSite: "lax",
+    },
+  })
+);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const SESSION_SECRET = process.env.SESSION_SECRET || "S3cr3t!@#";
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === "production", // must be true on HTTPS
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-      sameSite: "lax",
-    },
-  })
-);
+// Sync the session table
+sessionStore.sync();
 app.use(flash());
 app.use((req, res, next) => {
   res.locals.success_msg = req.flash("success_msg");
