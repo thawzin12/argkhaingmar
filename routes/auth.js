@@ -77,7 +77,7 @@ router.get("/admin/createuser", (req, res) => {
 
 // Prefer POST for logout (CSRF-protected if you use CSRF)
 // Logout
-router.get("/logout", (req, res, next) => {
+router.get("/logout", isAuthenticated, (req, res, next) => {
   if (!req.session) {
     return res.redirect("/login");
   }
