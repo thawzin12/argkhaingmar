@@ -76,6 +76,26 @@ app.use("/", productRoute);
 app.use("/", require("./routes/dashboard"));
 
 app.use(express.json());
+// Handle 404 - Keep this at the end, after all routes
+app.use((req, res, next) => {
+  res.status(404).render("404", {
+    title: "Page Not Found",
+  });
+});
+
+// Error handler (500 etc.)
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+
+  res.status(500).render("error", {
+    title: "Error",
+    message:
+      process.env.NODE_ENV === "production"
+        ? "Something went wrong, please try again later."
+        : err.message,
+  });
+});
+
 const PORT = process.env.PORT || process.env.SERVER_PORT || 4500;
 
 app.listen(PORT, () => {
