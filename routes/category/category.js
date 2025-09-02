@@ -10,7 +10,7 @@ const {
 } = require("../../models");
 const { isValidSpaceName } = require("../../utils/validation");
 // Show form
-const { isAdmin, isAuthenticated } = require("../middleware/authMiddleware");
+const { isAdmin, isAuthenticated } = require("../../middleware/authMiddleware");
 router.get("/createcategory", isAuthenticated, (req, res) => {
   res.render("createcategory", {
     title: "Create Category",
