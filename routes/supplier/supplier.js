@@ -3,9 +3,9 @@ const router = express.Router();
 const { Op } = require("sequelize");
 const Supplier = require("../../models/Supplier");
 const { isValidSpaceName } = require("../../utils/validation");
-
+const { isAuth, isAuthenticated } = require("../../middleware/authMiddleware");
 // GET
-router.get("/createsupplier", async (req, res) => {
+router.get("/createsupplier", isAuthenticated, async (req, res) => {
   try {
     const suppliers = await Supplier.findAll({ order: [["name", "ASC"]] });
     res.render("createsupplier", {

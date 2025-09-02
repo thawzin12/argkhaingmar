@@ -8,9 +8,9 @@ const { Category, Product } = require("../../models");
 // If you have a single file: const Category = require("../../models/Category");
 
 const { isValidSpaceName } = require("../../utils/validation");
-
+const { isAdmin, isAuthenticated } = require("../../middleware/authMiddleware");
 // GET: render view page
-router.get("/categories", async (req, res) => {
+router.get("/categories", isAuthenticated, async (req, res) => {
   try {
     res.render("viewcategories", {
       title: "Categories",

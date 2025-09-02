@@ -8,7 +8,7 @@ const {
   SalePayment,
 } = require("../models");
 const { Op } = require("sequelize");
-
+const { isAuthenticated } = require("../middleware/authMiddleware");
 // Helper: Last N days labels
 const getLastNDays = (n) => {
   const days = [];
@@ -31,7 +31,7 @@ const getLast12Months = () => {
   return months;
 };
 
-router.get("/dashboard", async (req, res) => {
+router.get("/dashboard", isAuthenticated, async (req, res) => {
   try {
     // Counts
     const [categoryCount, productCount, supplierCount, customerCount] =

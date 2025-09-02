@@ -16,11 +16,20 @@
   <ul class="navbar-nav ml-auto">
     <!-- Navbar Search -->
     <li class="nav-item d-none d-sm-inline-block">
-      <a href="/logout" class="nav-link"
-        ><i class="fa
-        <i class="fa fa-power-off" aria-hidden="true"></i>Logout</a
+      <form
+        action="/logout"
+        method="get"
+        style="display: inline"
+        class="nav-link"
       >
+        <button type="submit" class="btn btn-primary">
+          <i class="fa fa-power-off mr-2"></i>Logout
+        </button>
+      </form>
     </li>
+    <!--  -->
+
+    <!--  -->
     <li class="nav-item">
       <a class="nav-link" data-widget="fullscreen" href="#" role="button">
         <i class="fas fa-expand-arrows-alt"></i>
