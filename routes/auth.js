@@ -79,9 +79,7 @@ router.get("/admin/createuser", (req, res) => {
 // Prefer POST for logout (CSRF-protected if you use CSRF)
 // Logout
 router.get("/logout", (req, res, next) => {
-  if (!req.session) {
-    return res.redirect("/login");
-  }
+  if (!req.session) return res.redirect("/login");
 
   req.session.destroy((err) => {
     if (err) {
@@ -89,9 +87,9 @@ router.get("/logout", (req, res, next) => {
       return next(err);
     }
 
-    // Clear the cookie (must use the same cookie name from session config)
-    res.clearCookie("connect.sid", {
-      path: "/", // or match whatever path you used in session middleware
+    // Clear the session cookie
+    res.clearCookie("session.id", {
+      path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

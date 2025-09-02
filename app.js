@@ -4,30 +4,35 @@ require("dotenv-flow").config();
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const flash = require("connect-flash");
-
 const SESSION_SECRET = process.env.SESSION_SECRET || "S3cr3t!@#";
 const session = require("express-session");
 const SequelizeStore = require("connect-session-sequelize")(session.Store);
-const sequelize = require("./config/database"); // your Sequelize instance
+const sequelize = require("./config/database");
 
-const sessionStore = new SequelizeStore({
-  db: sequelize,
-});
+const sessionStore = new SequelizeStore({ db: sequelize });
+
+// Tell Express it’s behind a proxy (needed for secure cookies on prod)
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "secret",
+    secret: SESSION_SECRET,
+    name: "session.id", // explicit cookie name (avoid default "connect.sid")
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production", // HTTPS only
+      secure: process.env.NODE_ENV === "production", // only set cookie over HTTPS in prod
       maxAge: 24 * 60 * 60 * 1000, // 1 day
       httpOnly: true,
       sameSite: "lax",
     },
   })
 );
+
+sessionStore.sync();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
