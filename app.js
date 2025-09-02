@@ -83,18 +83,18 @@ app.use((req, res, next) => {
   });
 });
 
-// Error handler (500 etc.)
-app.use((err, req, res, next) => {
-  console.error(err.stack);
+// // Error handler (500 etc.)
+// app.use((err, req, res, next) => {
+//   console.error(err.stack);
 
-  res.status(500).render("error", {
-    title: "Error",
-    message:
-      process.env.NODE_ENV === "production"
-        ? "Something went wrong, please try again later."
-        : err.message,
-  });
-});
+//   res.status(500).render("error", {
+//     title: "Error",
+//     message:
+//       process.env.NODE_ENV === "production"
+//         ? "Something went wrong, please try again later."
+//         : err.message,
+//   });
+// });
 
 const PORT = process.env.PORT || process.env.SERVER_PORT || 4500;
 
