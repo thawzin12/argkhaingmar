@@ -1,115 +1,132 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width initial-scale=1.0" />
-    <title> </title>
-    <!-- GLOBAL MAINLY STYLES-->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login</title>
+    <!-- Bootstrap CSS -->
     <link
-      href="./assets/vendors/bootstrap/dist/css/bootstrap.min.css"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <script
-      src="https://kit.fontawesome.com/b4a2e866f3.js"
-      crossorigin="anonymous"
-    ></script>
-
-    <!-- THEME STYLES-->
-    <link href="assets/css/main.css" rel="stylesheet" />
-    <!-- PAGE LEVEL STYLES -->
-    <link href="./assets/css/pages/auth-light.css" rel="stylesheet" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background: #f8f9fa;
+      }
+      .login-container {
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .card {
+        border-radius: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      .input-group-text {
+        cursor: pointer;
+      }
+      .text-danger {
+        font-size: 0.875rem;
+      }
+    </style>
   </head>
-
-  <body class="bg-silver-300">
-    <div class="content">
-      <div class="brand">
-        <h1 class="text-info">KhaingMar</h1>
-      </div>
-      <form
-        id="login-form"
-        method="post"
-        class="needs-validation"
-        action="/login"
-        novalidate
-      >
-        <h2 class="login-title">Log in</h2>
-        <div class="form-group">
-          <div class="input-group-icon right">
-            <div class="input-icon"><i class="fa fa-envelope"></i></div>
-            <input
-              class="form-control <%= errors.email ? 'is-invalid' : '' %>"
-              value="<%= data.email || '' %>"
-              type="email"
-              name="email"
-              placeholder="Email"
-              autocomplete="off"
-            />
-          </div>
+  <body class="bg-primary-subtle">
+    <div class="login-container">
+      <div class="card p-4" style="max-width: 400px; width: 100%">
+        <div class="card-header">
+          <h2 class="text-center text-info">KhaingMar</h2>
         </div>
-        <div class="text-danger"><%= errors.email || '' %></div>
-        <div class="form-group">
-          <div class="input-group-icon right">
-            <div class="input-icon" id="togglePassword">
-              <i class="fa-solid fa-eye-slash"></i>
-            </div>
-            <input
-              class="form-control <%= errors.password ? 'is-invalid' : '' %>"
-              value="<%= data.password || '' %>"
-              type="password"
-              name="password"
-              id="password"
-              placeholder="Password"
-            />
-          </div>
-          <div class="text-danger"><%= errors.password || '' %></div>
-        </div>
-
-        <div class="form-group d-flex justify-content-between">
-          <label class="ui-checkbox ui-checkbox-info">
-            <input type="checkbox" />
-            <span class="input-span"></span>Remember me</label
+        <div class="card-body">
+          <h3 class="text-center mb-4">🔐 Login</h3>
+          <form
+            id="login-form"
+            method="POST"
+            action="/login"
+            class="needs-validation"
+            novalidate
           >
-          <a href="#">Forgot password?</a>
-        </div>
-        <div class="form-group">
-          <button class="btn btn-info btn-block" type="submit">Login</button>
-        </div>
-      </form>
-    </div>
-    <!-- BEGIN PAGA BACKDROPS-->
-    <div class="sidenav-backdrop backdrop"></div>
-    <div class="preloader-backdrop">
-      <div class="page-preloader">Loading</div>
-    </div>
-    <!-- END PAGA BACKDROPS-->
-    <!-- CORE PLUGINS -->
-    <script
-      src="./assets/vendors/jquery/dist/jquery.min.js"
-      type="text/javascript"
-    ></script>
-    <script
-      src="./assets/vendors/popper.js/dist/umd/popper.min.js"
-      type="text/javascript"
-    ></script>
-    <script
-      src="./assets/vendors/bootstrap/dist/js/bootstrap.min.js"
-      type="text/javascript"
-    ></script>
-    <!-- PAGE LEVEL PLUGINS -->
-    <script
-      src="./assets/vendors/jquery-validation/dist/jquery.validate.min.js"
-      type="text/javascript"
-    ></script>
-    <!-- CORE SCRIPTS-->
-    <script src="assets/js/app.js" type="text/javascript"></script>
+            <!-- Email Field -->
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <input
+                type="email"
+                name="email"
+                class="form-control <%= errors.email ? 'is-invalid' : '' %>"
+                placeholder="Enter your email"
+                autocomplete="off"
+                value="<%= data.email || '' %>"
+                required
+              />
+              <div class="text-danger"><%= errors.email || '' %></div>
+            </div>
 
+            <!-- Password Field -->
+            <div class="mb-3">
+              <label class="form-label">Password</label>
+              <div class="input-group">
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  class="form-control <%= errors.password ? 'is-invalid' : '' %>"
+                  placeholder="Enter your password"
+                  value="<%= data.password || '' %>"
+                  required
+                />
+                <span class="input-group-text" onclick="togglePassword()">
+                  <i class="bi bi-eye-slash" id="toggleIcon"></i>
+                </span>
+              </div>
+              <div class="text-danger"><%= errors.password || '' %></div>
+            </div>
+
+            <!-- Remember & Forgot -->
+            <div class="d-flex justify-content-between mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="remember" />
+                <label class="form-check-label" for="remember"
+                  >Remember me</label
+                >
+              </div>
+              <a href="#">Forgot password?</a>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary">Login</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+      // Password toggle
+      function togglePassword() {
+        const passwordInput = document.getElementById("password");
+        const toggleIcon = document.getElementById("toggleIcon");
+        if (passwordInput.type === "password") {
+          passwordInput.type = "text";
+          toggleIcon.classList.remove("bi-eye-slash");
+          toggleIcon.classList.add("bi-eye");
+        } else {
+          passwordInput.type = "password";
+          toggleIcon.classList.remove("bi-eye");
+          toggleIcon.classList.add("bi-eye-slash");
+        }
+      }
+
+      // Bootstrap validation
       (function () {
         "use strict";
         var forms = document.querySelectorAll(".needs-validation");
-
         Array.prototype.slice.call(forms).forEach(function (form) {
           form.addEventListener(
             "submit",
@@ -125,7 +142,5 @@
         });
       })();
     </script>
-
-    <script src="./js/eye.js"></script>
   </body>
 </html>
