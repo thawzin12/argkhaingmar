@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const { Product, Category, ProductSize, Size, Unit } = require("../../models");
-
+const { isAuthenticated } = require("../../middleware/authMiddleware");
 // GET products view
-router.get("/products", async (req, res) => {
+router.get("/products", isAuthenticated, async (req, res) => {
   try {
     const categories = await Category.findAll({ order: [["name", "ASC"]] });
     res.render("products", { categories, activePage: "product-list" });

@@ -1,40 +1,80 @@
 <%- include('datahead.ejs') %>
 <style>
-  /* Copy Button */
+  /* --- Export Buttons Styling --- */
   .dt-button.buttons-copy {
     background-color: #17a2b8 !important; /* Teal/Info */
     color: white !important;
     border-radius: 5px;
   }
-
-  /* Excel Button */
   .dt-button.buttons-excel {
     background-color: #28a745 !important; /* Green */
     color: white !important;
     border-radius: 5px;
   }
-
-  /* PDF Button */
   .dt-button.buttons-pdf {
     background-color: #dc3545 !important; /* Red */
     color: white !important;
     border-radius: 5px;
   }
-
-  /* Print Button */
   .dt-button.buttons-print {
     background-color: #007bff !important; /* Blue */
     color: white !important;
     border-radius: 5px;
   }
-
-  /* Column Visibility Button */
   .dt-button.buttons-colvis {
     background-color: #6c757d !important; /* Gray */
     color: white !important;
     border-radius: 5px;
   }
+
+  /* --- Due status highlighting --- */
+  /* Row gets a left border and gentle background to signal urgency. */
+  tr.due-soon td {
+    border-left: 6px solid #fd7e14 !important; /* orange */
+    background: rgba(253, 126, 20, 0.06);
+  }
+  tr.overdue td {
+    border-left: 6px solid #dc3545 !important; /* red */
+    background: rgba(220, 53, 69, 0.08);
+  }
+
+  /* Badge styles for due info in cell */
+  .badge-due {
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.5rem;
+    display: inline-block;
+    min-width: 70px;
+    text-align: center;
+  }
+  .badge-due.soon {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffe69c;
+  }
+  .badge-due.over {
+    background: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+  }
+  .badge-due.safe {
+    background: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #badbcc;
+  }
+
+  /* Align numeric cells right */
+  #purchaseTable td.text-right {
+    text-align: right !important;
+  }
+
+  /* Tighten action buttons spacing */
+  .table .btn + .btn {
+    margin-left: 0.25rem;
+  }
 </style>
+
 <section class="content-header">
   <div class="container-fluid">
     <div class="row mb-2">
@@ -58,22 +98,26 @@
         <label>Filter by Month</label>
         <input type="month" id="filter-month" class="form-control" />
       </div>
+      <div class="col-md-4">
+        <label>Filter by Due Month</label>
+        <input type="month" id="filter-due-month" class="form-control" />
+      </div>
     </div>
 
     <!-- Total Summary Section -->
     <div class="row mb-3">
       <div class="col-md-4">
-        <div class="alert alert-info">
+        <div class="alert alert-info mb-2">
           <strong>Total Amount:</strong> <span id="summary-total">0</span>
         </div>
       </div>
       <div class="col-md-4">
-        <div class="alert alert-success">
+        <div class="alert alert-success mb-2">
           <strong>Total Paid:</strong> <span id="summary-paid">0</span>
         </div>
       </div>
       <div class="col-md-4">
-        <div class="alert alert-primary text-white">
+        <div class="alert alert-primary text-white mb-2">
           <strong>Total Remaining:</strong>
           <span id="summary-remaining">0</span>
         </div>
@@ -102,6 +146,10 @@
               </thead>
               <tbody></tbody>
             </table>
+            <small class="text-muted"
+              >Tip: use the month filters above to see per-supplier totals for a
+              period.</small
+            >
           </div>
         </div>
       </div>
@@ -124,96 +172,143 @@
                   <tr>
                     <th>Invoice #</th>
                     <th>Supplier</th>
-                    <th style="width: 70px">Date</th>
+                    <th style="width: 90px">Purchase Date</th>
+                    <th style="width: 90px">Due Date</th>
+                    <th style="width: 160px">Due Status</th>
                     <th>Total Amount</th>
                     <th>Paid</th>
                     <th>Remaining</th>
                     <th>Status</th>
                     <th style="width: 67px">Items</th>
-                    <th style="width: 100px">Action</th>
+                    <th style="width: 140px">Action</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
               </table>
+            </div>
+            <div class="mt-2">
+              <span class="badge-due safe">OK</span>
+              <span class="ml-1">= due > 20 days</span>
+              <span class="badge-due soon ml-3">Due ≤ 20d</span>
+              <span class="badge-due over ml-3">Overdue</span>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Items Modal -->
+  <div class="modal fade" id="itemsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Purchase Items</h5>
+          <button type="button" class="close" data-dismiss="modal">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Size</th>
+                <th>Unit</th>
+                <th>Quantity</th>
+                <th>Cost Price</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="itemsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Modal -->
+  <div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog modal-md">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">Add Payment</h5>
+          <button type="button" class="close text-white" data-dismiss="modal">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="pay-purchase-id" />
+          <div class="form-group">
+            <label>Total Amount</label>
+            <input type="text" id="pay-total" class="form-control" readonly />
+          </div>
+          <div class="form-group">
+            <label>Already Paid</label>
+            <input type="text" id="pay-already" class="form-control" readonly />
+          </div>
+          <div class="form-group">
+            <label>Remaining</label>
+            <input
+              type="text"
+              id="pay-remaining"
+              class="form-control"
+              readonly
+            />
+          </div>
+          <div class="form-group">
+            <label>Pay Now</label>
+            <input
+              type="number"
+              step="0.01"
+              id="pay-amount"
+              class="form-control"
+            />
+          </div>
+          <div class="alert alert-danger d-none" id="pay-error"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-success" id="save-payment">Pay</button>
+          <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Purchase Modal -->
+  <div class="modal fade" id="editPurchaseModal" tabindex="-1">
+    <div class="modal-dialog modal-md">
+      <div class="modal-content">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title">Edit Purchase</h5>
+          <button type="button" class="close" data-dismiss="modal">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="edit-purchase-id" />
+          <div class="form-group">
+            <label>Invoice #</label>
+            <input type="text" id="edit-invoice" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>Purchase Date</label>
+            <input type="date" id="edit-purchase-date" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" id="edit-due-date" class="form-control" />
+          </div>
+          <div class="alert alert-danger d-none" id="edit-error"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-warning" id="save-edit">Save</button>
+          <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
-
-<!-- Items Modal -->
-<div class="modal fade" id="itemsModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Purchase Items</h5>
-        <button type="button" class="close" data-dismiss="modal">
-          &times;
-        </button>
-      </div>
-      <div class="modal-body">
-        <table class="table table-bordered">
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Size</th>
-              <th>Unit</th>
-              <th>Quantity</th>
-              <th>Cost Price</th>
-              <th>Subtotal</th>
-            </tr>
-          </thead>
-          <tbody id="itemsTableBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Payment Modal -->
-<div class="modal fade" id="paymentModal" tabindex="-1">
-  <div class="modal-dialog modal-md">
-    <div class="modal-content">
-      <div class="modal-header bg-success text-white">
-        <h5 class="modal-title">Add Payment</h5>
-        <button type="button" class="close text-white" data-dismiss="modal">
-          &times;
-        </button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="pay-purchase-id" />
-        <div class="form-group">
-          <label>Total Amount</label>
-          <input type="text" id="pay-total" class="form-control" readonly />
-        </div>
-        <div class="form-group">
-          <label>Already Paid</label>
-          <input type="text" id="pay-already" class="form-control" readonly />
-        </div>
-        <div class="form-group">
-          <label>Remaining</label>
-          <input type="text" id="pay-remaining" class="form-control" readonly />
-        </div>
-        <div class="form-group">
-          <label>Pay Now</label>
-          <input
-            type="number"
-            step="0.01"
-            id="pay-amount"
-            class="form-control"
-          />
-        </div>
-        <div class="alert alert-danger d-none" id="pay-error"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-success" id="save-payment">Pay</button>
-        <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -221,6 +316,36 @@
     const summaryPaid = document.getElementById("summary-paid");
     const summaryRemaining = document.getElementById("summary-remaining");
     const supplierTbody = document.querySelector("#supplierSummaryTable tbody");
+
+    const DAYS_SOON = 20; // threshold for due soon
+
+    const nf2 = (n) =>
+      (parseFloat(n) || 0).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+      });
+
+    const toISO = (date) => {
+      if (!date) return "";
+      const dt = new Date(date);
+      if (Number.isNaN(dt.getTime())) return "";
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, "0");
+      const d = String(dt.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    };
+
+    const daysBetween = (from, to) => {
+      const MS = 24 * 60 * 60 * 1000;
+      const start = new Date(from);
+      const end = new Date(to);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+      // zero out time for fair day diff
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+      return Math.round((end - start) / MS);
+    };
+
+    const todayISO = toISO(new Date());
 
     const updateSupplierSummary = (purchases) => {
       const supplierTotals = {};
@@ -236,19 +361,12 @@
       supplierTbody.innerHTML = Object.entries(supplierTotals)
         .map(
           ([name, vals]) => `
-        <tr>
-          <td>${name}</td>
-          <td>${vals.total.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-          })}</td>
-          <td>${vals.paid.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-          })}</td>
-          <td>${vals.remaining.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-          })}</td>
-        </tr>
-      `
+            <tr>
+              <td>${name}</td>
+              <td class="text-right">${nf2(vals.total)}</td>
+              <td class="text-right">${nf2(vals.paid)}</td>
+              <td class="text-right">${nf2(vals.remaining)}</td>
+            </tr>`
         )
         .join("");
     };
@@ -259,6 +377,7 @@
         data: function (d) {
           d.date = $("#filter-date").val();
           d.month = $("#filter-month").val();
+          d.due_month = $("#filter-due-month").val(); // backend optional
         },
         dataSrc: function (json) {
           // Update total summary
@@ -270,15 +389,9 @@
             paid += parseFloat(row.total_paid) || 0;
             remaining += parseFloat(row.remaining) || 0;
           });
-          summaryTotal.textContent = total.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-          });
-          summaryPaid.textContent = paid.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-          });
-          summaryRemaining.textContent = remaining.toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-          });
+          summaryTotal.textContent = nf2(total);
+          summaryPaid.textContent = nf2(paid);
+          summaryRemaining.textContent = nf2(remaining);
 
           // Update per-supplier summary
           updateSupplierSummary(json);
@@ -286,26 +399,53 @@
           return json;
         },
       },
+
       columns: [
         { data: "invoice_number" },
         { data: "supplier_name" },
-        { data: "purchase_date" },
+        {
+          data: "purchase_date",
+          render: (d) => d || "-",
+        },
+        {
+          data: "due_date",
+          render: (d, type, row) => d || "-",
+        },
+        {
+          data: null,
+          orderable: false,
+          render: (row) => {
+            const dueISO = row.due_date ? row.due_date : null;
+            if (!dueISO) return `<span class="badge-due safe">No Due</span>`;
+
+            const diff = daysBetween(todayISO, dueISO);
+            const isPaid = (parseFloat(row.remaining) || 0) <= 0;
+
+            if (isPaid) return `<span class="badge-due safe">Paid</span>`;
+            if (diff === null) return `<span class="badge-due">-</span>`;
+            if (diff < 0)
+              return `<span class="badge-due over">Overdue ${Math.abs(
+                diff
+              )}d</span>`;
+            if (diff <= DAYS_SOON)
+              return `<span class="badge-due soon">Due in ${diff}d</span>`;
+            return `<span class="badge-due safe">OK</span>`;
+          },
+          className: "text-center",
+        },
         {
           data: "total_amount",
-          render: (d) =>
-            parseFloat(d).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+          render: (d) => nf2(d),
           className: "text-right",
         },
         {
           data: "total_paid",
-          render: (d) =>
-            parseFloat(d).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+          render: (d) => nf2(d),
           className: "text-right",
         },
         {
           data: "remaining",
-          render: (d) =>
-            parseFloat(d).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+          render: (d) => nf2(d),
           className: "text-right",
         },
         { data: "status" },
@@ -318,15 +458,50 @@
         {
           data: null,
           render: (row) => {
-            let payBtn =
+            const payBtn =
               row.status === "Unpaid"
-                ? `<button class="btn btn-sm btn-success mark-paid" data-id="${row.purchase_id}" data-total="${row.total_amount}" data-paid="${row.total_paid}" data-remaining="${row.remaining}">Pay</button>`
+                ? `<button class="btn btn-sm btn-success mark-paid"
+                      data-id="${row.purchase_id}"
+                      data-total="${row.total_amount}"
+                      data-paid="${row.total_paid}"
+                      data-remaining="${row.remaining}">Pay</button>`
                 : "";
-            return `${payBtn} <button class="btn btn-sm btn-danger delete-purchase" data-id="${row.purchase_id}">Delete</button>`;
+
+            const editBtn = `<button class="btn btn-sm btn-warning edit-purchase"
+                                data-id="${row.purchase_id}"
+                                data-invoice="${_.escape(
+                                  row.invoice_number || ""
+                                )}"
+                                data-pdate="${row.purchase_date || ""}"
+                                data-ddate="${
+                                  row.due_date || ""
+                                }">Edit</button>`;
+
+            const delBtn = `<button class="btn btn-sm btn-danger delete-purchase" data-id="${row.purchase_id}">Delete</button>`;
+
+            return `${payBtn} ${editBtn} ${delBtn}`;
           },
-          className: "text-right",
+          className: "text-right text-nowrap",
         },
       ],
+
+      order: [[2, "desc"]], // default sort by purchase date desc
+
+      // Add row highlighting based on due date
+      createdRow: function (row, data) {
+        const dueISO = data.due_date ? data.due_date : null;
+        const remaining = parseFloat(data.remaining) || 0;
+        if (!dueISO || remaining <= 0) return;
+
+        const diff = daysBetween(todayISO, dueISO);
+        if (diff === null) return;
+
+        if (diff < 0) {
+          row.classList.add("overdue");
+        } else if (diff <= DAYS_SOON) {
+          row.classList.add("due-soon");
+        }
+      },
 
       dom: "Bflrtip",
 
@@ -340,7 +515,7 @@
         },
         {
           extend: "excel",
-          text: '<i class="fas fa-file-excel"></i>Excel',
+          text: '<i class="fas fa-file-excel"></i> Excel',
           className: "bg-success",
           title: "Purchase Report",
           exportOptions: { columns: ":visible" },
@@ -349,16 +524,37 @@
           extend: "pdf",
           className: "bg-danger",
           text: '<i class="fas fa-file-pdf"></i> PDF Report',
-          title: "Purchase Report - KhaingMar", // PDF Title
+          title: "Purchase Report - KhaingMar",
           exportOptions: { columns: ":visible" },
+          customize: function (doc) {
+            // Slightly widen columns for dates
+            if (
+              doc.content[1] &&
+              doc.content[1].table &&
+              doc.content[1].table.widths
+            ) {
+              doc.content[1].table.widths = [
+                "*",
+                "*",
+                "auto",
+                "auto",
+                "auto",
+                "auto",
+                "auto",
+                "auto",
+                "auto",
+                "auto",
+                "auto",
+              ];
+            }
+          },
         },
         {
           extend: "print",
           className: "bg-info",
           text: '<i class="fas fa-print"></i> Print',
-          title: "Purchase Report - KhaingMar", // Print Header Title
+          title: "Purchase Report - KhaingMar",
           customize: function (win) {
-            // Optional: style print preview
             $(win.document.body)
               .css("font-size", "16pt")
               .prepend(
@@ -377,13 +573,14 @@
 
       language: {
         emptyTable:
-          "<div style='color:black; font-weight:bold;'><h1>📭 </h1>Try changing the date/month filter to see purchases.</div>",
+          "<div style='color:black; font-weight:bold;'><h1>📭 </h1>Try changing the date/month/due-month filters to see purchases.</div>",
       },
       pageLength: 10,
       deferLoading: 0,
     });
 
-    $("#filter-date, #filter-month").on("change", () =>
+    // Filters
+    $("#filter-date, #filter-month, #filter-due-month").on("change", () =>
       purchaseTable.ajax.reload()
     );
 
@@ -397,36 +594,30 @@
           tbody.innerHTML = items
             .map(
               (i) => `
-        <tr>
-          <td>${i.product_name}</td>
-          <td>${i.size_label}</td>
-          <td>${i.unit_label}</td>
-          <td>${i.quantity}</td>
-          <td>${i.cost_price}</td>
-          <td>${i.subtotal}</td>
-        </tr>`
+                <tr>
+                  <td>${i.product_name}</td>
+                  <td>${i.size_label}</td>
+                  <td>${i.unit_label}</td>
+                  <td class="text-right">${i.quantity}</td>
+                  <td class="text-right">${i.cost_price}</td>
+                  <td class="text-right">${i.subtotal}</td>
+                </tr>`
             )
             .join("");
           $("#itemsModal").modal("show");
         });
     });
 
-    // Payment & Delete functionality remains same
+    // Payment flow
     $("#purchaseTable").on("click", ".mark-paid", function () {
       const id = $(this).data("id");
       const total = parseFloat($(this).data("total")) || 0;
       const already = parseFloat($(this).data("paid")) || 0;
       const remaining = parseFloat($(this).data("remaining")) || 0;
       $("#pay-purchase-id").val(id);
-      $("#pay-total").val(
-        total.toLocaleString("en-US", { minimumFractionDigits: 2 })
-      );
-      $("#pay-already").val(
-        already.toLocaleString("en-US", { minimumFractionDigits: 2 })
-      );
-      $("#pay-remaining").val(
-        remaining.toLocaleString("en-US", { minimumFractionDigits: 2 })
-      );
+      $("#pay-total").val(nf2(total));
+      $("#pay-already").val(nf2(already));
+      $("#pay-remaining").val(nf2(remaining));
       $("#pay-amount").val("");
       $("#pay-error").addClass("d-none");
       $("#paymentModal").modal("show");
@@ -446,6 +637,7 @@
       const payNow = parseFloat($("#pay-amount").val()) || 0;
       const remaining =
         parseFloat($("#pay-remaining").val().replace(/,/g, "")) || 0;
+
       if (!payNow || payNow <= 0)
         return Swal.fire("Error", "Enter a valid amount", "error");
       if (payNow > remaining)
@@ -470,6 +662,7 @@
         });
     });
 
+    // Delete purchase
     $("#purchaseTable").on("click", ".delete-purchase", function () {
       const id = $(this).data("id");
       Swal.fire({
@@ -485,10 +678,103 @@
           .then((r) => r.json())
           .then((data) => {
             if (data.success) purchaseTable.ajax.reload();
-            else Swal.fire("Error", "Cannot delete purchase", "error");
+            else
+              Swal.fire(
+                "Error",
+                data.message || "Cannot delete purchase",
+                "error"
+              );
           });
       });
     });
+
+    // --- Edit Purchase ---
+    // open modal
+    $("#purchaseTable").on("click", ".edit-purchase", function () {
+      const id = $(this).data("id");
+      const invoice = $(this).data("invoice") || "";
+      const pdate = $(this).data("pdate") || "";
+      const ddate = $(this).data("ddate") || "";
+      $("#edit-purchase-id").val(id);
+      $("#edit-invoice").val(invoice);
+      $("#edit-purchase-date").val(pdate);
+      $("#edit-due-date").val(ddate);
+      $("#edit-error").addClass("d-none").text("");
+      $("#editPurchaseModal").modal("show");
+    });
+
+    // save edits
+    $("#save-edit").on("click", () => {
+      const id = $("#edit-purchase-id").val();
+      const invoice = ($("#edit-invoice").val() || "").trim();
+      const pdate = $("#edit-purchase-date").val();
+      const ddate = $("#edit-due-date").val();
+
+      if (!invoice) {
+        $("#edit-error")
+          .removeClass("d-none")
+          .text("Invoice number is required.");
+        return;
+      }
+      if (!pdate) {
+        $("#edit-error")
+          .removeClass("d-none")
+          .text("Purchase date is required.");
+        return;
+      }
+      if (!ddate) {
+        $("#edit-error").removeClass("d-none").text("Due date is required.");
+        return;
+      }
+      if (ddate && daysBetween(pdate, ddate) < 0) {
+        $("#edit-error")
+          .removeClass("d-none")
+          .text("Due date cannot be before Purchase date.");
+        return;
+      }
+
+      fetch(`/purchases/update/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoice_number: invoice,
+          purchase_date: pdate,
+          due_date: ddate || null,
+        }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            $("#editPurchaseModal").modal("hide");
+            Swal.fire("Saved", "Purchase updated", "success");
+            purchaseTable.ajax.reload(null, false);
+          } else {
+            $("#edit-error")
+              .removeClass("d-none")
+              .text(data.message || "Failed to update.");
+          }
+        })
+        .catch(() => {
+          $("#edit-error")
+            .removeClass("d-none")
+            .text("Network error. Try again.");
+        });
+    });
+
+    // (Optional) underscore escape util used once for invoice in action buttons
+    // Minimal, safe implementation if _ not present from other libs
+    if (typeof _ === "undefined") {
+      window._ = {
+        escape: function (str) {
+          return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        },
+      };
+    }
   });
 </script>
 

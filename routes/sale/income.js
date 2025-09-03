@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { fn, col, where } = require("sequelize"); // use where directly
 const { Sale, Customer, SalePayment, sequelize } = require("../../models");
+const { isAuthenticated } = require("../../middleware/authMiddleware");
 
 /**
  * Safe date formatter that accepts Date or string
@@ -21,10 +22,10 @@ function formatYMD(d) {
 }
 
 // Views
-router.get("/daily", (req, res) =>
+router.get("/daily", isAuthenticated, (req, res) =>
   res.render("daily_income", { activePage: "daily-income" })
 );
-router.get("/monthly", (req, res) =>
+router.get("/monthly", isAuthenticated, (req, res) =>
   res.render("monthly_income", { activePage: "monthly-income" })
 );
 

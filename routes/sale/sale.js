@@ -11,9 +11,10 @@ const {
   Unit,
   sequelize,
 } = require("../../models");
+const { isAuthenticated } = require("../../middleware/authMiddleware");
 
 // GET
-router.get("/salevoucher", async (req, res) => {
+router.get("/salevoucher", isAuthenticated, async (req, res) => {
   try {
     // include id, name, address, phone for picker
     const customers = await Customer.findAll({

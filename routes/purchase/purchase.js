@@ -16,7 +16,8 @@ const {
   Unit,
   sequelize,
 } = require("../../models");
-router.get("/createpurchase", async (req, res) => {
+const { isAuthenticated } = require("../../middleware/authMiddleware");
+router.get("/createpurchase", isAuthenticated, async (req, res) => {
   try {
     const suppliers = await Supplier.findAll({ order: [["name", "ASC"]] });
 
@@ -234,7 +235,7 @@ router.post("/createpurchase", async (req, res) => {
 });
 
 // View purchases page
-router.get("/purchases", (req, res) =>
+router.get("/purchases", isAuthenticated, (req, res) =>
   res.render("purchases", { activePage: "purchase-list" })
 );
 
@@ -404,6 +405,7 @@ router.get("/purchases/ajax", async (req, res) => {
         invoice_number: p.invoice_number,
         supplier_name: p.Supplier?.name || "-",
         purchase_date: formatDate(p.purchase_date),
+        due_date: p.due_date ? formatDate(p.due_date) : null,
         total_amount: parseFloat(p.total_amount),
         total_paid: totalPaid,
         remaining: remaining,
@@ -415,6 +417,60 @@ router.get("/purchases/ajax", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch purchases" });
+  }
+});
+
+router.post("/purchases/update/:id", async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const { invoice_number, purchase_date, due_date } = req.body;
+    const purchaseId = req.params.id;
+
+    const purchase = await Purchase.findByPk(purchaseId, { transaction: t });
+    if (!purchase) throw new Error("Purchase not found");
+
+    // 1. Trim invoice and check uniqueness (excluding current purchase)
+    const invoiceTrim = invoice_number?.trim();
+    if (invoiceTrim) {
+      const existing = await Purchase.findOne({
+        where: {
+          invoice_number: invoiceTrim,
+          purchase_id: { [Op.ne]: purchaseId }, // exclude current purchase
+        },
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      });
+      if (existing) {
+        throw new Error(
+          "Invoice number already exists. Please use a unique invoice number."
+        );
+      }
+    }
+
+    let purchaseDateObj = purchase_date
+      ? new Date(purchase_date)
+      : new Date(purchase.purchase_date);
+    let dueDateObj = due_date ? new Date(due_date) : null;
+
+    if (dueDateObj && purchaseDateObj && dueDateObj <= purchaseDateObj) {
+      throw new Error("Due Date must be later than Purchase Date.");
+    }
+
+    await purchase.update(
+      {
+        invoice_number: invoiceTrim,
+        purchase_date: purchaseDateObj,
+        due_date: dueDateObj,
+      },
+      { transaction: t }
+    );
+
+    await t.commit();
+    res.json({ success: true });
+  } catch (err) {
+    await t.rollback();
+    console.error(err);
+    res.json({ success: false, message: err.message });
   }
 });
 

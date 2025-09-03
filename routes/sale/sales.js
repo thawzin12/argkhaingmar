@@ -12,9 +12,9 @@ const {
   Unit,
   sequelize,
 } = require("../../models");
-
+const { isAuthenticated } = require("../../middleware/authMiddleware");
 // Render sales page
-router.get("/sales", (req, res) =>
+router.get("/sales", isAuthenticated, (req, res) =>
   res.render("sales", { activePage: "sale-list" })
 );
 
@@ -222,12 +222,12 @@ router.delete("/sales/delete/:id", async (req, res) => {
 });
 
 //////////////////
-router.get("/viewcustomer", (req, res) =>
+router.get("/viewcustomer", isAuthenticated, (req, res) =>
   res.render("viewcustomer", { activePage: "customer-summary" })
 );
 
 // Get summary by customer with optional date range
-router.get("/sales/customer-summary", async (req, res) => {
+router.get("/sales/customer-summary", isAuthenticated, async (req, res) => {
   try {
     const { fromDate, toDate } = req.query;
     const where = {};

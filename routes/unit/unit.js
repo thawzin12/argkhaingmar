@@ -3,9 +3,9 @@ const router = express.Router();
 const Unit = require("../../models/Unit");
 const { Op } = require("sequelize");
 const { isValidSpaceName } = require("../../utils/validation");
-
+const { isAuthenticated } = require("../../middleware/authMiddleware");
 // GET: show unit creation form
-router.get("/createunit", async (req, res) => {
+router.get("/createunit", isAuthenticated, async (req, res) => {
   try {
     const units = await Unit.findAll({ order: [["unit_label", "ASC"]] });
     res.render("createunit", {

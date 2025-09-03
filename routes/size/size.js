@@ -3,9 +3,9 @@ const router = express.Router();
 const Size = require("../../models/Size");
 const { Op } = require("sequelize");
 const { isValidSpaceName } = require("../../utils/validation");
-
+const { isAuthenticated } = require("../../middleware/authMiddleware");
 // GET: show size creation form + list
-router.get("/createsize", async (req, res) => {
+router.get("/createsize", isAuthenticated, async (req, res) => {
   try {
     const sizes = await Size.findAll({ order: [["size_label", "ASC"]] });
     res.render("createsize", {

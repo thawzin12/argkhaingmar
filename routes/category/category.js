@@ -20,7 +20,7 @@ router.get("/createcategory", isAuthenticated, (req, res) => {
 });
 
 // Handle form submit
-router.post("/createcategory", isAuthenticated, async (req, res) => {
+router.post("/createcategory", async (req, res) => {
   try {
     const { category } = req.body;
 
@@ -60,7 +60,7 @@ router.post("/createcategory", isAuthenticated, async (req, res) => {
 });
 
 // ================= GET =================
-router.get("/createproduct", async (req, res) => {
+router.get("/createproduct", isAuthenticated, async (req, res) => {
   try {
     const categories = await Category.findAll({ order: [["name", "ASC"]] });
     const sizes = await Size.findAll({ order: [["size_label", "ASC"]] });

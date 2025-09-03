@@ -276,64 +276,114 @@
     </button>
   </form>
 </div>
-
 <!-- Printable Voucher -->
 <div
   id="printVoucher"
-  style="display: none; font-family: Arial; width: 80%; margin: auto"
+  style="
+    display: none;
+    font-family: Arial, sans-serif;
+    width: 80%;
+    margin: auto;
+  "
 >
-  <h3 class="text-center">Sales Invoice</h3>
-  <p><b>Customer:</b> <span id="pCustomer"></span></p>
-  <p>
-    <b>Address:</b> <span id="pAddress"></span> | <b>Phone:</b>
+  <!-- Header -->
+  <div style="text-align: center; margin-bottom: 10px">
+    <h2 style="margin: 0; text-transform: uppercase">KhaingMar</h2>
+    <h4 style="margin: 2px 0; font-weight: normal">
+      Agricultural Chemical Drug & Fertilizer Store<br />
+      Address: Magway City, Thityarkauk | Phone: 09-794312279
+    </h4>
+    <h4 style="margin: 5px 0 20px 0">Sales Invoice</h4>
+  </div>
+
+  <!-- Customer Info -->
+  <p style="margin: 2px 0"><b>Customer:</b> <span id="pCustomer"></span></p>
+  <p style="margin: 2px 0">
+    <b>Address:</b> <span id="pAddress"></span> &nbsp; | &nbsp; <b>Phone:</b>
     <span id="pPhone"></span>
   </p>
-  <p><b>Invoice:</b> <span id="pInvoice"></span></p>
-  <table border="1" width="100%" cellspacing="0" cellpadding="5">
-    <thead>
+  <p style="margin: 2px 0"><b>Invoice #:</b> <span id="pInvoice"></span></p>
+
+  <!-- Items Table -->
+  <table
+    border="1"
+    width="100%"
+    cellspacing="0"
+    cellpadding="5"
+    style="border-collapse: collapse; font-size: 13px"
+  >
+    <thead style="background: #f0f0f0">
       <tr>
-        <th>Product</th>
-        <th>Size</th>
-        <th>Unit</th>
-        <th>Qty</th>
-        <th>Unit Price</th>
-        <th>Discount</th>
-        <th>Subtotal</th>
+        <th align="left">Product</th>
+        <th align="center">Size</th>
+        <th align="center">Unit</th>
+        <th align="center">Qty</th>
+        <th align="right">Unit Price</th>
+        <th align="right">Discount</th>
+        <th align="right">Subtotal</th>
       </tr>
     </thead>
     <tbody id="pItems"></tbody>
     <tfoot>
       <tr>
         <td colspan="6" align="right"><b>Total Before Any Discount</b></td>
-        <td id="pGross"></td>
+        <td id="pGross" align="right"></td>
       </tr>
       <tr>
-        <td colspan="6" align="right"><b>Line Discounts</b></td>
-        <td id="pLineDiscounts"></td>
+        <td colspan="6" align="right"><b>Item Discounts</b></td>
+        <td id="pLineDiscounts" align="right"></td>
       </tr>
       <tr>
-        <td colspan="6" align="right"><b>Subtotal After Line Discounts</b></td>
-        <td id="pTotal"></td>
+        <td colspan="6" align="right"><b>Subtotal After Item Discounts</b></td>
+        <td id="pTotal" align="right"></td>
       </tr>
       <tr>
         <td colspan="6" align="right"><b>Overall Discount</b></td>
-        <td id="pDiscount"></td>
+        <td id="pDiscount" align="right"></td>
       </tr>
-      <tr>
+      <tr style="font-size: 15px">
         <td colspan="6" align="right"><b>Grand Total</b></td>
-        <td id="pGrand"></td>
+        <td id="pGrand" align="right"></td>
       </tr>
       <tr>
         <td colspan="6" align="right"><b>Paid</b></td>
-        <td id="pPaid"></td>
+        <td id="pPaid" align="right"></td>
       </tr>
       <tr>
         <td colspan="6" align="right"><b>Balance</b></td>
-        <td id="pBalance"></td>
+        <td id="pBalance" align="right"></td>
       </tr>
     </tfoot>
   </table>
+
+  <!-- Footer -->
+  <p style="text-align: center; margin-top: 15px; font-size: 12px">
+    Thank you for shopping at <b>KhaingMar</b>!
+  </p>
 </div>
+
+<!-- Print Styles -->
+<style>
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #printVoucher,
+    #printVoucher * {
+      visibility: visible;
+    }
+    #printVoucher {
+      position: absolute;
+      left: 50%;
+      top: 10px;
+      transform: translateX(-50%);
+      width: 90%; /* scale to fit page */
+    }
+    table {
+      font-size: 12px;
+    }
+  }
+</style>
 
 <!-- Scan Notification Sound -->
 <audio id="scanSound" src="/sounds/scan.mp3" preload="auto"></audio>
