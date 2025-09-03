@@ -50,7 +50,6 @@ router.get("/createpurchase", async (req, res) => {
   }
 });
 
-// POST: create purchase (header + items)
 router.post("/createpurchase", async (req, res) => {
   const t = await sequelize.transaction();
   try {
@@ -58,27 +57,30 @@ router.post("/createpurchase", async (req, res) => {
       supplier_id,
       invoice_number,
       purchase_date,
+      due_date,
       size_id = [],
       quantity = [],
       cost_price = [],
     } = req.body;
 
-    // Normalize arrays for single row
     if (!Array.isArray(size_id)) size_id = [size_id];
     if (!Array.isArray(quantity)) quantity = [quantity];
     if (!Array.isArray(cost_price)) cost_price = [cost_price];
 
-    // Prepare error containers
     const errors = {};
     const itemErrors = size_id.map(() => ({}));
 
-    // Basic header validation
     if (!supplier_id) errors.supplier_id = "Supplier is required.";
     if (!invoice_number || !invoice_number.trim())
       errors.invoice_number = "Invoice number is required.";
     if (!purchase_date) errors.purchase_date = "Purchase date is required.";
+    // Ensure due_date exists
+    if (!due_date) {
+      errors.due_date = "Due date is required.";
+    } else if (new Date(due_date) < new Date(purchase_date)) {
+      errors.due_date = "Due date must be after or equal to Purchase Date.";
+    }
 
-    // Items validation
     let hasItem = false;
     let computedTotal = 0;
 
@@ -99,15 +101,11 @@ router.post("/createpurchase", async (req, res) => {
       }
     }
 
-    if (!hasItem) {
-      errors.items = "At least one valid item is required.";
-    }
-
-    // If any validation errors → rollback transaction and re-render with inline messages
+    if (!hasItem) errors.items = "At least one valid item is required.";
     const anyItemErrors = itemErrors.some((r) => Object.keys(r).length > 0);
+
     if (Object.keys(errors).length > 0 || anyItemErrors) {
       await t.rollback();
-
       const suppliers = await Supplier.findAll({ order: [["name", "ASC"]] });
       const productSizes = await ProductSize.findAll({
         include: [
@@ -115,23 +113,19 @@ router.post("/createpurchase", async (req, res) => {
           { model: Size, attributes: ["size_id", "size_label"] },
           { model: Unit, attributes: ["unit_id", "unit_label"] },
         ],
-        order: [
-          [Product, "name", "ASC"],
-          [Size, "size_label", "ASC"],
-          [Unit, "unit_label", "ASC"],
-        ],
       });
 
       return res.status(422).render("create_purchase", {
         suppliers,
-        activePage: "purchase-create",
         productSizes,
+        activePage: "purchase-create",
         errors,
         itemErrors,
         formData: {
           supplier_id,
           invoice_number,
           purchase_date,
+          due_date,
           size_id,
           quantity,
           cost_price,
@@ -139,7 +133,6 @@ router.post("/createpurchase", async (req, res) => {
       });
     }
 
-    // --- Check invoice uniqueness (inside transaction) ---
     const invoiceTrim = invoice_number.trim();
     const existing = await Purchase.findOne({
       where: { invoice_number: invoiceTrim },
@@ -149,21 +142,13 @@ router.post("/createpurchase", async (req, res) => {
 
     if (existing) {
       await t.rollback();
-
-      errors.invoice_number =
-        "This invoice number already exists. Please use a unique invoice number.";
-
+      errors.invoice_number = "Invoice number already exists.";
       const suppliers = await Supplier.findAll({ order: [["name", "ASC"]] });
       const productSizes = await ProductSize.findAll({
         include: [
           { model: Product, attributes: ["product_id", "name"] },
           { model: Size, attributes: ["size_id", "size_label"] },
           { model: Unit, attributes: ["unit_id", "unit_label"] },
-        ],
-        order: [
-          [Product, "name", "ASC"],
-          [Size, "size_label", "ASC"],
-          [Unit, "unit_label", "ASC"],
         ],
       });
 
@@ -177,6 +162,7 @@ router.post("/createpurchase", async (req, res) => {
           supplier_id,
           invoice_number,
           purchase_date,
+          due_date,
           size_id,
           quantity,
           cost_price,
@@ -184,26 +170,24 @@ router.post("/createpurchase", async (req, res) => {
       });
     }
 
-    // --- Create purchase header ---
     const purchase = await Purchase.create(
       {
         supplier_id,
         invoice_number: invoiceTrim,
         purchase_date,
-        total_amount: 0, // temp, will update after items
+        due_date,
+        total_amount: 0,
         status: "unpaid",
       },
       { transaction: t }
     );
 
-    // --- Create items + inventory movements + update stock ---
     for (let i = 0; i < size_id.length; i++) {
       const sid = parseInt(size_id[i], 10);
       const qty = parseInt(quantity[i], 10);
       const cost = parseFloat(cost_price[i]);
       const subtotal = qty * cost;
 
-      // 1. Create PurchaseItem
       await PurchaseItem.create(
         {
           purchase_id: purchase.purchase_id,
@@ -215,7 +199,6 @@ router.post("/createpurchase", async (req, res) => {
         { transaction: t }
       );
 
-      // 2. Create InventoryMovement
       await InventoryMovement.create(
         {
           size_id: sid,
@@ -226,21 +209,15 @@ router.post("/createpurchase", async (req, res) => {
         { transaction: t }
       );
 
-      // 3. Update ProductSize stock
-      const productSize = await ProductSize.findByPk(sid, { transaction: t });
-      if (productSize) {
-        const newStock = (productSize.stock_qty || 0) + qty;
-        await productSize.update(
-          {
-            stock_qty: newStock,
-            stock_updated: new Date(),
-          },
+      const ps = await ProductSize.findByPk(sid, { transaction: t });
+      if (ps) {
+        await ps.update(
+          { stock_qty: (ps.stock_qty || 0) + qty, stock_updated: new Date() },
           { transaction: t }
         );
       }
     }
 
-    // --- Update total amount ---
     await purchase.update({ total_amount: computedTotal }, { transaction: t });
 
     await t.commit();
@@ -250,22 +227,7 @@ router.post("/createpurchase", async (req, res) => {
     console.error(err);
     try {
       await t.rollback();
-    } catch (rollbackErr) {
-      console.error("Rollback failed:", rollbackErr);
-    }
-
-    // Handle race condition unique constraint error
-    if (
-      err.name === "SequelizeUniqueConstraintError" ||
-      /unique/i.test(err.message)
-    ) {
-      req.flash(
-        "error_msg",
-        "Invoice number already exists. Please use a unique invoice number."
-      );
-      return res.redirect("/createpurchase");
-    }
-
+    } catch {}
     req.flash("error_msg", "Failed to create purchase. " + err.message);
     return res.redirect("/createpurchase");
   }

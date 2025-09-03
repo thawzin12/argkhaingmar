@@ -80,6 +80,16 @@
                 <% } %>
               </div>
 
+              <!-- Due Date -->
+              <div class="form-group">
+                <label for="due_date">Due Date</label>
+                <input type="date" id="due_date" name="due_date" class="form-control"
+                  value="<%= formData?.due_date || '' %>">
+                <% if (errors && errors.due_date) { %>
+                  <div class="text-danger"><%= errors.due_date %></div>
+                <% } %>
+              </div>
+
               <!-- Items -->
               <div class="form-group">
                 <label>Purchase Items</label>
@@ -162,6 +172,35 @@
   const form = document.getElementById('purchase-form');
   const itemsContainer = document.getElementById("items-container");
   const addBtn = document.getElementById("add-item");
+
+  const purchaseDateInput = document.getElementById("purchase_date");
+  const dueDateInput = document.getElementById("due_date");
+   // Set default purchase_date = today
+  if (!purchaseDateInput.value) {
+    purchaseDateInput.value = new Date().toISOString().split("T")[0];
+  }
+
+  // Set default due_date = purchase_date + 1 month
+  if (!dueDateInput.value) {
+    const pd = new Date(purchaseDateInput.value);
+    pd.setMonth(pd.getMonth() + 1);
+    dueDateInput.value = pd.toISOString().split("T")[0];
+  }
+
+  // Ensure due_date ≥ purchase_date
+  dueDateInput.min = purchaseDateInput.value;
+
+  purchaseDateInput.addEventListener("change", () => {
+    // Update min for due_date
+    dueDateInput.min = purchaseDateInput.value;
+
+    // If due_date < purchase_date → reset to purchase_date + 1 month
+    if (dueDateInput.value < purchaseDateInput.value) {
+      const pd = new Date(purchaseDateInput.value);
+      pd.setMonth(pd.getMonth() + 1);
+      dueDateInput.value = pd.toISOString().split("T")[0];
+    }
+  });
 
   // Flash messages auto-hide
   setTimeout(() => {
