@@ -9,7 +9,10 @@ const session = require("express-session");
 const SequelizeStore = require("connect-session-sequelize")(session.Store);
 const sequelize = require("./config/database");
 
-const sessionStore = new SequelizeStore({ db: sequelize });
+const sessionStore = new SequelizeStore({
+  db: sequelize,
+  tableName: "sessions",
+});
 
 // Tell Express it’s behind a proxy (needed for secure cookies on prod)
 if (process.env.NODE_ENV === "production") {
@@ -39,7 +42,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // Sync the session table
-sessionStore.sync();
+
 app.use(flash());
 app.use((req, res, next) => {
   res.locals.success_msg = req.flash("success_msg");
