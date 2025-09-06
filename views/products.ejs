@@ -68,14 +68,14 @@
                 <thead class="bg-primary">
                   <tr>
                     <th>Product Name</th>
-                    <th style="width: 50px">Size</th>
-                    <th style="width: 30px">Package</th>
+                    <th>Size</th>
+                    <th>Package</th>
                     <th>Cost Price</th>
                     <th>Sale Price</th>
                     <th>Barcode</th>
-                    <th style="width: 30px">Stock</th>
+                    <th>Stock</th>
                     <th>Subtotal</th>
-                    <th style="width: 400px">Action</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -242,12 +242,11 @@
         data-size="${escapeHtml(row.package_size)}"
         data-unit="${escapeHtml(row.unit_label)}"
         data-barcode="${escapeHtml(row.barcode)}">Barcode</button>`,
-          className: "text-center",
+          className: "text-nowrap",
         },
       ],
 
       dom: "Bflrtip",
-
       buttons: [
         {
           extend: "copy",

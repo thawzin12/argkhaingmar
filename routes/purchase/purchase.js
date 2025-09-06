@@ -74,6 +74,9 @@ router.post("/createpurchase", async (req, res) => {
     if (!supplier_id) errors.supplier_id = "Supplier is required.";
     if (!invoice_number || !invoice_number.trim())
       errors.invoice_number = "Invoice number is required.";
+    if (!invoiceTrim.Number) {
+      errors.invoice_number = "Invoice is invalid.";
+    }
     if (!purchase_date) errors.purchase_date = "Purchase date is required.";
     // Ensure due_date exists
     if (!due_date) {
